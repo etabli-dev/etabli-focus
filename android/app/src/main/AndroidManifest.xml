@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Permissions:
+      - POST_NOTIFICATIONS: required at runtime on Android 13+ to show local
+        notifications when a focus block ends.
+      - SCHEDULE_EXACT_ALARM / USE_EXACT_ALARM: needed so the notification
+        fires precisely at endDate, even if the device is dozing. On
+        Android 14+ exact alarms require either user grant or one of the
+        privileged use cases — we use a one-shot calendar/alarm scheduled
+        from a user gesture, which qualifies. We fall back to inexact if
+        the user denies the runtime permission.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:name=".EtabliFocusApplication"
+        android:label="Établi Focus"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/Theme.EtabliFocus"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:supportsRtl="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.EtabliFocus">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- AlarmManager target that posts the "focus complete" notification. -->
+        <receiver
+            android:name=".notifications.TimerCompletionReceiver"
+            android:exported="false" />
+
+    </application>
+</manifest>

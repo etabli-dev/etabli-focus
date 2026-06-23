@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Établi Focus</string>
+    <string name="notification_channel_name">Focus blocks</string>
+    <string name="notification_channel_description">Plays a single chime when a focus or break block ends.</string>
+</resources>
