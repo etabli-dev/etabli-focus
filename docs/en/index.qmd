@@ -1,0 +1,42 @@
+---
+title: "Etabli Focus"
+sidebar: en
+---
+
+<img src="../_icons/icon-focus.svg" alt="" width="80" align="right" style="margin:0 0 1rem 1rem;">
+
+<span class="etabli-badge">Offline tool</span>
+
+> Track focus sessions by category.
+
+Etabli Focus is a Pomodoro and focus-session tracker. Work blocks are recorded by category (deep work, review, admin, research, manuscript, data analysis) with configurable focus and break durations and local notifications. Timers survive force-quit and reboot. Fully offline.
+
+![Focus — today view with categories and history.](../_screens/android-today.png){width=320}
+
+## Who benefits
+
+Anyone wanting to record focused work cleanly across multiple sessions — for self-tracking, for invoicing, or as a data backbone for a more deliberate work setup.
+
+## Platforms
+
+| Platform | Status |
+|----------|--------|
+| iOS      | ✓      |
+| Android  | ✓      |
+
+## Privacy
+
+No analytics, no third-party SDKs. The app runs fully offline; sessions and categories live only on the device.
+
+## Installation
+
+| Platform | Source |
+|----------|--------|
+| iOS      | App Store |
+| Android  | Google Play and F-Droid (main repository) |
+
+Details: see [Getting Started](getting-started.qmd).
+
+## Support
+
+If you find the app useful: [Liberapay](https://liberapay.com/rabanheller/) · inside the app you will also find a Buy-Me-a-Coffee link.

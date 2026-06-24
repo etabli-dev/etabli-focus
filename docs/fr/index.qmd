@@ -1,0 +1,42 @@
+---
+title: "Etabli Focus"
+sidebar: fr
+---
+
+<img src="../_icons/icon-focus.svg" alt="" width="80" align="right" style="margin:0 0 1rem 1rem;">
+
+<span class="etabli-badge">Outil hors ligne</span>
+
+> Suivre les séances de concentration par catégorie.
+
+Etabli Focus est un tracker de séances Pomodoro et de concentration. Les blocs de travail sont enregistrés par catégorie (travail en profondeur, revue, admin, recherche, manuscrit, analyse de données) avec des durées de concentration et de pause configurables et des notifications locales. Les minuteurs survivent au force-quit et au redémarrage. Entièrement hors ligne.
+
+![Focus — vue du jour avec catégories et historique.](../_screens/android-today.png){width=320}
+
+## À qui ça s'adresse
+
+À toute personne souhaitant consigner proprement son travail concentré sur plusieurs séances — pour le suivi personnel, la facturation, ou comme matière à une organisation plus consciente.
+
+## Plateformes
+
+| Plateforme | Statut |
+|------------|--------|
+| iOS        | ✓      |
+| Android    | ✓      |
+
+## Vie privée
+
+Aucun outil d'analyse, aucun SDK tiers. L'appli fonctionne entièrement hors ligne ; les séances et catégories restent uniquement sur l'appareil.
+
+## Installation
+
+| Plateforme | Distribution |
+|------------|--------------|
+| iOS        | App Store |
+| Android    | Google Play et F-Droid (dépôt principal) |
+
+Détails : voir [Premiers pas](getting-started.qmd).
+
+## Soutenir
+
+Si l'appli vous est utile : [Liberapay](https://liberapay.com/rabanheller/) · dans l'appli même vous trouverez également un lien Buy-Me-a-Coffee.

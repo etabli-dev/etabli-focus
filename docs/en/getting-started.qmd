@@ -1,0 +1,36 @@
+---
+title: "Getting Started"
+sidebar: en
+---
+
+## Requirements
+
+- An iOS or Android device. No account, no sign-in.
+- Local-notifications permission (asked at first launch).
+
+## Setup
+
+1. Install the app from the store and open it.
+2. The app starts on the **Today** view; preset categories are already in place.
+3. Tap a category, press **Start** — the timer is running.
+
+![Today view: tap a category and start the timer.](../_screens/android-today.png){width=320}
+
+## Recording a session
+
+1. On the **Today** tab, pick a category.
+2. Optionally adjust focus and break duration (default: 25 / 5 minutes).
+3. Press **Start**. The app notifies when the focus block ends, suggests a break, and returns to focus mode afterwards.
+4. **Stop** ends the session early; the time already elapsed is saved.
+
+## Your own categories
+
+In the **Categories** tab you can edit names and colours. The colour is reused in lists and charts.
+
+![Category management with a colour tag per entry.](../_screens/android-categories.png){width=320}
+
+## Notes
+
+- The app keeps things **local**: no cloud sync, no external backups. Sharing data across devices is deliberately not modelled.
+- Timers keep running even if the app goes to the background or the system reboots — the app reconstructs state on relaunch.
+- Notifications are local; no push token is sent to any server.

@@ -1,0 +1,67 @@
+---
+title: "Funktionen"
+sidebar: de
+---
+
+Focus ist bewusst klein gehalten: ein Timer, Kategorien, Verlauf. Nichts darüber hinaus.
+
+## Module
+
+| Bereich | Funktion |
+|---------|----------|
+| **Heute** | Aktiver Timer, schnelle Kategorie-Auswahl, Tagesübersicht der bisherigen Sessions. |
+| **Kategorien** | Vorgegebene und eigene Kategorien mit Farbe und Standard-Dauern. |
+| **Verlauf** | Vergangene Sessions pro Tag/Woche, mit Summe pro Kategorie. |
+| **Einstellungen** | Standard-Fokuszeit, Standard-Pausenzeit, Theme (Hell/Dunkel/System). |
+
+### Tagesansicht
+
+Schnellzugriff auf eine Session: Kategorie wählen, Timer starten, Verlauf des Tages im Blick.
+
+![Tagesansicht mit laufender Session.](../_screens/android-today.png){width=320}
+
+### Kategorien
+
+Vorgegebene Kategorien werden bei Installation angelegt; eigene können hinzukommen. Jede Kategorie hat einen Namen und eine Farbe, die im Verlauf und in den Diagrammen wiedererkannt wird.
+
+![Kategorien-Liste mit Farb-Tag pro Eintrag.](../_screens/android-categories.png){width=320}
+
+### Verlauf
+
+Aggregierte Werte pro Kategorie über Tag und Woche; ideal um zu prüfen, wofür die Konzentrationsblöcke tatsächlich genutzt wurden.
+
+![Verlauf-Diagramme mit Kategorien-Summen.](../_screens/android-stats.png){width=320}
+
+### Einstellungen
+
+Standard-Dauern, Theme, Töne und Benachrichtigungen — die wichtigsten Schalter auf einer Seite.
+
+![Einstellungen mit Standard-Dauern und Theme-Auswahl.](../_screens/android-settings.png){width=320}
+
+## Persistenz
+
+| Was | Wo |
+|-----|-----|
+| Sessions, Kategorien, Einstellungen | lokale Datenbank auf dem Gerät. |
+| Aktiver Timer-Zustand | persistent — überlebt Force-Quit und Neustart, da Anfang/Ende mit Zeitstempel gespeichert werden. |
+
+## Benachrichtigungen
+
+| Auslöser | Inhalt |
+|----------|--------|
+| Fokuszeit zu Ende | Pause vorgeschlagen. |
+| Pausenzeit zu Ende | Hinweis, dass eine neue Fokus-Session anliegen kann. |
+
+Alle Benachrichtigungen sind **lokal** geplant (`UNUserNotificationCenter` auf iOS, `NotificationManager` auf Android). Es gibt keinen Push-Dienst.
+
+## Offline-Garantie
+
+Es gibt keine Netzwerkaktivität. Die App fragt weder einen Server an, noch sendet sie Telemetrie.
+
+## Bezug
+
+| Kanal | App |
+|-------|-----|
+| App Store (iOS) · Google Play (Android) | Etabli Focus |
+| F-Droid — Haupt-Repository | Etabli Focus |
+| Quellcode | [`etabli-dev/etabli-focus`](https://github.com/etabli-dev/etabli-focus) |

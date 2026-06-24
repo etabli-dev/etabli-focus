@@ -1,0 +1,36 @@
+---
+title: "Premiers pas"
+sidebar: fr
+---
+
+## Prérequis
+
+- Un appareil iOS ou Android. Pas de compte, pas d'inscription.
+- Autorisation pour les notifications locales (demandée au premier lancement).
+
+## Configuration
+
+1. Installer l'appli depuis le store et l'ouvrir.
+2. L'appli démarre sur la vue **Aujourd'hui** ; des catégories prédéfinies existent déjà.
+3. Toucher une catégorie, appuyer sur **Start** — le minuteur tourne.
+
+![Vue Aujourd'hui : toucher une catégorie et démarrer.](../_screens/android-today.png){width=320}
+
+## Enregistrer une séance
+
+1. Dans l'onglet **Aujourd'hui**, choisir une catégorie.
+2. Ajuster éventuellement les durées de concentration et de pause (par défaut : 25 / 5 minutes).
+3. Appuyer sur **Start**. L'appli notifie à la fin du bloc de concentration, propose une pause et revient en mode concentration ensuite.
+4. **Stop** termine la séance plus tôt ; le temps déjà écoulé est conservé.
+
+## Vos propres catégories
+
+Dans l'onglet **Catégories** vous pouvez gérer les noms et couleurs. La couleur est reprise dans les listes et les graphiques.
+
+![Gestion des catégories avec une pastille de couleur par entrée.](../_screens/android-categories.png){width=320}
+
+## Remarques
+
+- L'appli reste **locale** : pas de synchronisation cloud, pas de sauvegarde externe. Le partage entre appareils n'est délibérément pas pris en charge.
+- Les minuteurs continuent même si l'appli passe en arrière-plan ou si le système redémarre — l'état est reconstruit à la réouverture.
+- Les notifications sont locales ; aucun jeton push n'est envoyé à un serveur.

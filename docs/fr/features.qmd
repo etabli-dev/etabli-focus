@@ -1,0 +1,67 @@
+---
+title: "Fonctionnalités"
+sidebar: fr
+---
+
+Focus est volontairement petit : un minuteur, des catégories, un historique. Rien de plus.
+
+## Modules
+
+| Zone | Fonction |
+|------|----------|
+| **Aujourd'hui** | Minuteur actif, sélection rapide de catégorie, aperçu du jour. |
+| **Catégories** | Catégories prédéfinies et personnelles avec couleur et durées par défaut. |
+| **Historique** | Séances passées par jour/semaine, avec totaux par catégorie. |
+| **Paramètres** | Durée par défaut de concentration et de pause, thème (Clair/Sombre/Système). |
+
+### Vue du jour
+
+Le chemin le plus court vers une séance : choisir une catégorie, lancer le minuteur, garder la journée en vue.
+
+![Vue du jour avec une séance en cours.](../_screens/android-today.png){width=320}
+
+### Catégories
+
+Les catégories prédéfinies sont créées à l'installation ; on peut en ajouter d'autres. Chaque catégorie a un nom et une couleur reprise dans les graphiques et l'historique.
+
+![Liste des catégories avec pastille de couleur.](../_screens/android-categories.png){width=320}
+
+### Historique
+
+Totaux agrégés par catégorie, par jour et semaine — idéal pour vérifier sur quoi les blocs de concentration ont vraiment été consacrés.
+
+![Graphiques d'historique avec totaux par catégorie.](../_screens/android-stats.png){width=320}
+
+### Paramètres
+
+Durées par défaut, thème, sons et notifications — les leviers utiles regroupés en un écran.
+
+![Paramètres avec durées par défaut et choix de thème.](../_screens/android-settings.png){width=320}
+
+## Persistance
+
+| Quoi | Où |
+|------|-----|
+| Séances, catégories, paramètres | base locale sur l'appareil. |
+| État du minuteur actif | persistant — survit au force-quit et au redémarrage, car début/fin sont stockés avec horodatage. |
+
+## Notifications
+
+| Déclencheur | Contenu |
+|-------------|---------|
+| Fin du bloc de concentration | Pause suggérée. |
+| Fin du bloc de pause | Indice qu'une nouvelle séance peut commencer. |
+
+Toutes les notifications sont **locales** (`UNUserNotificationCenter` sur iOS, `NotificationManager` sur Android). Aucun service push.
+
+## Garantie hors ligne
+
+Aucune activité réseau. L'appli ne contacte aucun serveur, n'envoie aucune télémétrie.
+
+## Distribution
+
+| Canal | App |
+|-------|-----|
+| App Store (iOS) · Google Play (Android) | Etabli Focus |
+| F-Droid — dépôt principal | Etabli Focus |
+| Code source | [`etabli-dev/etabli-focus`](https://github.com/etabli-dev/etabli-focus) |

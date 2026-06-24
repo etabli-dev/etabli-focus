@@ -1,0 +1,36 @@
+---
+title: "Erste Schritte"
+sidebar: de
+---
+
+## Voraussetzungen
+
+- Nur ein iOS- oder Android-Gerät. Keine Anmeldung, kein Konto.
+- Berechtigung für lokale Benachrichtigungen (wird beim ersten Start erfragt).
+
+## Einrichtung
+
+1. App aus dem Store installieren und öffnen.
+2. Die App startet direkt in der **Heute**-Ansicht; vorgegebene Kategorien sind bereits angelegt.
+3. Eine Kategorie antippen, **Start** drücken — der Timer läuft.
+
+![Heute-Ansicht: Kategorien antippen und Timer starten.](../_screens/android-today.png){width=320}
+
+## Eine Session aufzeichnen
+
+1. Im **Heute**-Tab eine Kategorie wählen.
+2. Optional Fokus- und Pausenlänge anpassen (Standard: 25 / 5 Minuten).
+3. **Start** drücken. Die App benachrichtigt am Ende der Fokuszeit, schlägt eine Pause vor und kehrt danach in den Fokus-Modus zurück.
+4. Mit **Stop** beendest du die Session vorzeitig; bereits gelaufene Zeit wird gespeichert.
+
+## Eigene Kategorien
+
+Im **Kategorien**-Tab lassen sich Namen und Farben pflegen. Die Farbe wird in Listen und Diagrammen wiedererkannt.
+
+![Kategorien-Verwaltung mit Farb-Tag pro Eintrag.](../_screens/android-categories.png){width=320}
+
+## Hinweise
+
+- Die App rechnet **lokal**: keine Cloud-Synchronisation, keine externen Backups. Wenn du Daten zwischen Geräten teilen willst, ist das (bewusst) nicht abgebildet.
+- Timer laufen weiter, auch wenn die App in den Hintergrund geht oder das System neu startet — die App rekonstruiert den Stand beim Wiederöffnen.
+- Benachrichtigungen sind lokal; es geht kein Push-Token an einen Server.

@@ -1,0 +1,14 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#28A745"/>
+  <g id="glyph" fill="none" stroke="#FFFFFF" stroke-width="36"
+     stroke-linecap="round" stroke-linejoin="round">
+    <!-- Timer/tomato circle -->
+    <circle cx="512" cy="556" r="216"/>
+    <!-- Stem -->
+    <path d="M 482 340 L 482 304 L 542 304 L 542 340"/>
+    <!-- 12-o'clock tick -->
+    <line x1="512" y1="340" x2="512" y2="380"/>
+    <!-- Hand pointing to 1-o'clock (slight tilt) -->
+    <line x1="512" y1="556" x2="600" y2="498"/>
+  </g>
+</svg>
