@@ -1,5 +1,5 @@
 ---
-title: "Etabli Focus"
+title: "Établi Focus"
 sidebar: en
 ---
 
@@ -9,7 +9,7 @@ sidebar: en
 
 > Track focus sessions by category.
 
-Etabli Focus is a Pomodoro and focus-session tracker. Work blocks are recorded by category (deep work, review, admin, research, manuscript, data analysis) with configurable focus and break durations and local notifications. Timers survive force-quit and reboot. Fully offline.
+Établi Focus is a Pomodoro and focus-session tracker. Work blocks are recorded by category (deep work, review, admin, research, manuscript, data analysis) with configurable focus and break durations and local notifications. Timers survive force-quit and reboot. Fully offline.
 
 ![Focus — today view with categories and history.](../_screens/android-today.png){width=320}
 
@@ -30,10 +30,14 @@ No analytics, no third-party SDKs. The app runs fully offline; sessions and cate
 
 ## Installation
 
-| Platform | Source |
-|----------|--------|
-| iOS      | App Store |
-| Android  | Google Play and F-Droid (main repository) |
+Établi Focus is **under active development**. There are no App Store, Google Play or F-Droid releases yet.
+
+| Channel | Status |
+|---------|--------|
+| Android (APK) | **Development build** via [GitHub Releases](https://github.com/etabli-dev/etabli-focus/releases) |
+| App Store (iOS) | planned — not yet available |
+| Google Play | planned — not yet available |
+| F-Droid | planned — not yet available |
 
 Details: see [Getting Started](getting-started.qmd).
 

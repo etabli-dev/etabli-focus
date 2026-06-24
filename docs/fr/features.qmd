@@ -60,8 +60,10 @@ Aucune activité réseau. L'appli ne contacte aucun serveur, n'envoie aucune té
 
 ## Distribution
 
-| Canal | App |
-|-------|-----|
-| App Store (iOS) · Google Play (Android) | Etabli Focus |
-| F-Droid — dépôt principal | Etabli Focus |
+| Canal | Statut |
+|-------|--------|
+| Android (APK) | **Version de développement** via [GitHub Releases](https://github.com/etabli-dev/etabli-focus/releases) |
+| App Store (iOS) | prévu — pas encore disponible |
+| Google Play | prévu — pas encore disponible |
+| F-Droid | prévu — pas encore disponible |
 | Code source | [`etabli-dev/etabli-focus`](https://github.com/etabli-dev/etabli-focus) |

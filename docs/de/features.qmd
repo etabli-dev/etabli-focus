@@ -60,8 +60,10 @@ Es gibt keine Netzwerkaktivität. Die App fragt weder einen Server an, noch send
 
 ## Bezug
 
-| Kanal | App |
-|-------|-----|
-| App Store (iOS) · Google Play (Android) | Etabli Focus |
-| F-Droid — Haupt-Repository | Etabli Focus |
+| Kanal | Status |
+|-------|--------|
+| Android (APK) | **Entwicklungs-Build** über [GitHub Releases](https://github.com/etabli-dev/etabli-focus/releases) |
+| App Store (iOS) | geplant — noch nicht verfügbar |
+| Google Play | geplant — noch nicht verfügbar |
+| F-Droid | geplant — noch nicht verfügbar |
 | Quellcode | [`etabli-dev/etabli-focus`](https://github.com/etabli-dev/etabli-focus) |

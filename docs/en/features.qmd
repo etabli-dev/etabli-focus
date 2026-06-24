@@ -60,8 +60,10 @@ There is no network activity. The app does not reach any server, nor send any te
 
 ## Where to get it
 
-| Channel | App |
-|---------|-----|
-| App Store (iOS) · Google Play (Android) | Etabli Focus |
-| F-Droid — main repository | Etabli Focus |
+| Channel | Status |
+|---------|--------|
+| Android (APK) | **Development build** via [GitHub Releases](https://github.com/etabli-dev/etabli-focus/releases) |
+| App Store (iOS) | planned — not yet available |
+| Google Play | planned — not yet available |
+| F-Droid | planned — not yet available |
 | Source code | [`etabli-dev/etabli-focus`](https://github.com/etabli-dev/etabli-focus) |
