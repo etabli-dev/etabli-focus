@@ -52,17 +52,19 @@ fun TodayScreen(app: EtabliFocusApplication) {
     val t = Coder.tokens
     val categories by app.db.categoryDao().observeAll().collectAsState(initial = emptyList())
     val templates by app.db.templateDao().observeAll().collectAsState(initial = emptyList())
-    val todayStart = remember { Calendar.getInstance().startOfDayMillis() }
+    val today = rememberLocalDay()
+    val todayStart = today.startMillis
     val sessionsToday by app.db.sessionDao()
         .observeCompletedFocusSince(todayStart)
         .collectAsState(initial = emptyList())
 
     val state by app.engine.state.collectAsState()
+    val timerError by app.engine.error.collectAsState()
     var sheetCategory by remember { mutableStateOf<CategoryEntity?>(null) }
     val isWide = LocalConfiguration.current.screenWidthDp >= 700
 
-    val plan = remember(categories, templates, sessionsToday) {
-        val weekday = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
+    val plan = remember(categories, templates, sessionsToday, today) {
+        val weekday = today.date.dayOfWeek.value % 7 + 1
         categories.mapNotNull { cat ->
             val target = templates.firstOrNull {
                 it.weekday == weekday && it.categoryID == cat.id
@@ -77,6 +79,7 @@ fun TodayScreen(app: EtabliFocusApplication) {
             .verticalScroll(rememberScrollState()).padding(t.space.lg),
         verticalArrangement = Arrangement.spacedBy(t.space.lg),
     ) {
+        timerError?.let { Text(it, color = t.color.ink) }
         if (isWide) {
             Row(horizontalArrangement = Arrangement.spacedBy(t.space.lg)) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(t.space.lg)) {

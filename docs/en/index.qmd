@@ -3,44 +3,10 @@ title: "Établi Focus"
 sidebar: en
 ---
 
-<img src="../_icons/icon-focus.svg" alt="" width="80" align="right" style="margin:0 0 1rem 1rem;">
+Track work blocks by category with pause/resume, weekly targets and local history. Notification delivery depends on device permissions and power policies.
 
-<span class="etabli-badge">Offline tool</span>
+This page describes the October 2026 source revision. These source changes are not part of older development release downloads. Local checks are distinct from device, live-service and store acceptance.
 
-> Track focus sessions by category.
+[Current implementation, prerequisites and commands](../current-status.qmd)
 
-Établi Focus is a Pomodoro and focus-session tracker. Work blocks are recorded by category (deep work, review, admin, research, manuscript, data analysis) with configurable focus and break durations and local notifications. Timers survive force-quit and reboot. Fully offline.
-
-![Focus — today view with categories and history.](../_screens/0.1.0/01-today.png){width=320}
-
-## Who benefits
-
-Anyone wanting to record focused work cleanly across multiple sessions — for self-tracking, for invoicing, or as a data backbone for a more deliberate work setup.
-
-## Platforms
-
-| Platform | Status |
-|----------|--------|
-| iOS      | ✓      |
-| Android  | ✓      |
-
-## Privacy
-
-No analytics, no third-party SDKs. The app runs fully offline; sessions and categories live only on the device.
-
-## Installation
-
-Établi Focus is **under active development**. There are no App Store, Google Play or F-Droid releases yet.
-
-| Channel | Status |
-|---------|--------|
-| Android (APK) | **Development build** via [GitHub Releases](https://github.com/etabli-dev/etabli-focus/releases) |
-| App Store (iOS) | planned — not yet available |
-| Google Play | planned — not yet available |
-| F-Droid | planned — not yet available |
-
-Details: see [Getting Started](getting-started.qmd).
-
-## Support
-
-If you find the app useful: [Liberapay](https://liberapay.com/rabanheller/).
+[README](https://github.com/etabli-dev/etabli-focus/blob/main/README.md) · [GitHub](https://github.com/etabli-dev/etabli-focus)

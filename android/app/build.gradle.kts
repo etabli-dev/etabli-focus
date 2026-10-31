@@ -12,7 +12,7 @@ plugins {
 
 // Load the signing config from rootProject/keystore.properties so secrets stay
 // out of build.gradle. If the file is missing (e.g. CI without keystore),
-// release builds will only be signed with the debug keystore.
+// release builds remain unsigned.
 val keystoreProps = Properties().apply {
     val f = rootProject.file("keystore.properties")
     if (f.exists()) load(FileInputStream(f))
@@ -20,16 +20,17 @@ val keystoreProps = Properties().apply {
 
 android {
     namespace = "com.raban.etabli.focus"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.raban.etabli.focus"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
         vectorDrawables { useSupportLibrary = true }
     }
+    testOptions { unitTests.isIncludeAndroidResources = true }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -80,8 +81,13 @@ android {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.14.1")
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
     implementation(composeBom)
+    testImplementation(composeBom)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     androidTestImplementation(composeBom)
 
     implementation("androidx.compose.ui:ui")

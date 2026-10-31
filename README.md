@@ -4,7 +4,29 @@
 
 `iOS` `Android` · Apache-2.0 · Part of the [Établi Suite](https://github.com/etabli-dev)
 
-Établi Focus is a Pomodoro and focus-session tracker. Track work blocks by category (deep work, review, admin, research, manuscript, data analysis) with configurable focus and break durations and local notifications. Timers survive force-quit and reboot. Entirely offline.
+Établi Focus records focused work by category, with weekly targets and local history. Android uses Compose, Room, DataStore and AlarmManager; iOS uses SwiftUI, SwiftData and local notifications. Active deadlines and pause budgets persist across process restarts. Completion is reconciled when the application resumes; notification delivery depends on platform permissions and device power policies.
+
+## Build and first use
+
+Android prerequisites: JDK 17, Android SDK platform 36 and build-tools 35.0.0. Set `JAVA_HOME` and `ANDROID_HOME`, then:
+
+```sh
+cd android
+./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug bundleRelease
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Open Focus, choose a category, start a short block, pause/resume, and check Today and Stats after completion. Configure weekly targets under Template. Debug installs use a separate application ID. Release AABs remain unsigned until a private `keystore.properties` is supplied.
+
+For iOS, open `ios/EtabliFocus.xcodeproj` with Xcode on macOS, choose the EtabliFocus scheme and a simulator/device, and configure your own signing team for devices. This workspace has command-line Swift tools but no Xcode; the full iOS build is not locally verified.
+
+Additional portable checks:
+
+```sh
+python3 scripts/check_migration.py
+swiftc ios/App/TimerState.swift scripts/check_timer.swift -o /tmp/focus-timer-check
+/tmp/focus-timer-check
+```
 
 ## Availability
 
@@ -17,7 +39,7 @@
 
 ## Privacy
 
-No analytics. No third-party SDKs. No accounts. Credentials, where needed, live only in the platform secure store (iOS Keychain / Android EncryptedSharedPreferences). This app is fully offline.
+No accounts or analytics service. Categories, templates and session history stay in the local database; active timer state stays in platform preferences. Platform backups may include this data. The app uses the open-source platform libraries listed in its dependency manifests; it does not encrypt the history database.
 
 ## Repository layout
 

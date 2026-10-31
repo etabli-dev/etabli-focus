@@ -34,7 +34,7 @@ class NotificationScheduler(private val context: Context) {
         val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pending = pendingIntent(kind)
         // Cancel any prior scheduled completion.
-        am.cancel(pending)
+        cancel()
         // On Android 12+ exact alarms require either user grant OR a privileged
         // use case. We try exact first, fall back to inexact on SecurityException.
         try {
@@ -105,6 +105,19 @@ class TimerCompletionReceiver : BroadcastReceiver() {
             .setAutoCancel(true)
 
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(1001, builder.build())
+        try {
+            nm.notify(1001, builder.build())
+        } catch (_: SecurityException) {
+            // Permission can be revoked after the check while this receiver is running.
+        }
+    }
+}
+
+class TimerBootReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+        val pending = goAsync()
+        val app = context.applicationContext as com.raban.etabli.focus.EtabliFocusApplication
+        app.engine.restoreAlarm().invokeOnCompletion { pending.finish() }
     }
 }

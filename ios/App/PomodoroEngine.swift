@@ -7,37 +7,13 @@ import SwiftUI
 import SwiftData
 import UserNotifications
 
-// MARK: - Persisted timer state
-//
-// Active-timer state lives in UserDefaults as JSON. Living outside
-// SwiftData on purpose: the timer must survive force-quit / background /
-// device restart and be reconstructable BEFORE the @Model container
-// finishes opening (otherwise an "almost done" session could lose seconds).
-public struct TimerState: Codable, Equatable {
-    public enum Kind: String, Codable { case focus, breakShort, breakLong }
-    public enum Phase: String, Codable { case running, paused, idle }
-    public var phase: Phase
-    public var kind: Kind
-    public var categoryID: UUID?
-    public var sessionID: UUID?
-    /// `endDate` is the source of truth for time-remaining while running.
-    /// `pausedRemainingSeconds` carries over the budget while paused.
-    public var endDate: Date?
-    public var pausedRemainingSeconds: Double?
-    public var totalSeconds: Double
-    public var blocksCompletedInSet: Int   // for "long break after N"
-    public static let idle = TimerState(phase: .idle, kind: .focus,
-                                        categoryID: nil, sessionID: nil,
-                                        endDate: nil, pausedRemainingSeconds: nil,
-                                        totalSeconds: 0, blocksCompletedInSet: 0)
-}
-
 // MARK: - Engine
 
 @MainActor
 @Observable
 public final class PomodoroEngine {
     public private(set) var state: TimerState
+    public private(set) var lastError: String?
     public var blocksUntilLongBreak: Int = 4
     public var longBreakMinutes: Int = 20
 
@@ -56,26 +32,19 @@ public final class PomodoroEngine {
     // MARK: - Derived view
 
     public var remainingSeconds: Double {
-        switch state.phase {
-        case .running:
-            guard let end = state.endDate else { return 0 }
-            return max(0, end.timeIntervalSinceNow)
-        case .paused:
-            return max(0, state.pausedRemainingSeconds ?? 0)
-        case .idle:
-            return 0
-        }
+        state.remainingSeconds(at: Date())
     }
 
     /// 0…1 progress for the ring.
     public var progress: Double {
         guard state.totalSeconds > 0 else { return 0 }
-        return 1 - (remainingSeconds / state.totalSeconds)
+        return min(1, max(0, 1 - (remainingSeconds / state.totalSeconds)))
     }
 
     // MARK: - Control
 
     public func start(categoryID: UUID, kind: TimerState.Kind, minutes: Int) {
+        guard state.phase == .idle, (1...1440).contains(minutes) else { return }
         let seconds = Double(minutes) * 60
         let now = Date()
         var s = state
@@ -83,6 +52,7 @@ public final class PomodoroEngine {
         s.kind = kind
         s.categoryID = categoryID
         s.sessionID = UUID()
+        s.startedAt = now
         s.endDate = now.addingTimeInterval(seconds)
         s.pausedRemainingSeconds = nil
         s.totalSeconds = seconds
@@ -94,6 +64,7 @@ public final class PomodoroEngine {
     public func pause() {
         guard state.phase == .running else { return }
         let remaining = remainingSeconds
+        guard remaining > 0 else { return }
         var s = state
         s.phase = .paused
         s.endDate = nil
@@ -116,10 +87,12 @@ public final class PomodoroEngine {
 
     /// Cancel without completing — records a Session with `completed = false`.
     public func cancel(in context: ModelContext) {
-        if state.sessionID != nil {
-            writeSession(into: context, completed: false)
-        }
+        let ended = state.phase == .running && (state.endDate ?? .distantFuture) <= Date()
+        if ended { tick(in: context); return }
+        if state.sessionID != nil && !writeSession(into: context, completed: false) { return }
+        let count = state.blocksCompletedInSet
         state = .idle
+        state.blocksCompletedInSet = count
         persist()
         cancelNotification()
     }
@@ -129,10 +102,8 @@ public final class PomodoroEngine {
     public func tick(in context: ModelContext) {
         guard state.phase == .running, let end = state.endDate else { return }
         if Date() >= end {
-            if state.kind == .focus {
-                writeSession(into: context, completed: true)
-                state.blocksCompletedInSet += 1
-            }
+            guard writeSession(into: context, completed: true) else { return }
+            if state.kind == .focus { state.blocksCompletedInSet += 1 }
             state.phase = .idle
             state.endDate = nil
             state.sessionID = nil
@@ -142,21 +113,33 @@ public final class PomodoroEngine {
 
     // MARK: - Session writes
 
-    private func writeSession(into context: ModelContext, completed: Bool) {
-        guard let cid = state.categoryID, let sid = state.sessionID else { return }
-        let actualEnd = Date()
-        let started = (state.endDate ?? actualEnd).addingTimeInterval(-state.totalSeconds)
-        let session = Session(
-            id: sid,
-            categoryID: cid,
-            startedAt: started,
-            plannedEnd: state.endDate ?? actualEnd,
-            actualEnd: actualEnd,
-            completed: completed,
-            kind: state.kind == .focus ? "focus" : "break"
-        )
-        context.insert(session)
-        try? context.save()
+    private func writeSession(into context: ModelContext, completed: Bool) -> Bool {
+        guard let cid = state.categoryID, let sid = state.sessionID else { return false }
+        let now = Date()
+        let actualEnd = completed ? (state.endDate ?? now) : now
+        let active = state.activeSeconds(at: now, completed: completed)
+        let started = state.startedAt ?? actualEnd.addingTimeInterval(-active)
+        do {
+            let descriptor = FetchDescriptor<Session>(predicate: #Predicate { $0.id == sid })
+            let session: Session
+            if let existing = try context.fetch(descriptor).first {
+                session = existing
+            } else {
+                session = Session(id: sid, categoryID: cid, startedAt: started,
+                                  plannedEnd: state.endDate ?? actualEnd)
+                context.insert(session)
+            }
+            session.actualEnd = actualEnd
+            session.activeSeconds = active
+            session.completed = completed
+            session.kind = state.kind == .focus ? "focus" : "break"
+            try context.save()
+            lastError = nil
+            return true
+        } catch {
+            lastError = "Could not save the session. The timer is retained; please retry."
+            return false
+        }
     }
 
     // MARK: - Persistence

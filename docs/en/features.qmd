@@ -3,54 +3,22 @@ title: "Features"
 sidebar: en
 ---
 
-A guided walkthrough of Établi Focus v0.1.0, screen by screen. Every figure below is a real screenshot of the v0.1.0 development build running on an Android emulator. Focus is deliberately small: set per-weekday targets per category, start a timed focus block, and watch your stats build up over time — fully offline, no accounts, no telemetry.
+Track work blocks by category with pause/resume, weekly targets and local history. Notification delivery depends on device permissions and power policies.
 
-## Today
+This page describes the October 2026 source revision. These changes are unpublished and are not part of older development releases. Local checks are distinct from device, live-service and store acceptance.
 
-The home screen opens on **Today**. It shows the current date as a terminal-style breadcrumb, a **now** card (what is currently running, or a prompt to start), **today's plan** (your targets for this weekday), and a **start a block** action. It is the fastest path to a session: everything you need to begin is on one screen.
+[Current status / Aktueller Stand / État actuel](../current-status.qmd)
+
+Historical screenshots from v0.1.0; these are not verification of the current revision.
 
 ![Today — the home screen with the now card, today's plan, and the start-a-block action.](../_screens/0.1.0/01-today.png){width=320}
 
-## Starting a focus block
-
-Tapping **start a block** expands the category picker. Each category carries its own focus and break durations (for example 50 min focus · 10 min break), so picking one is all it takes to begin a timed session — no extra configuration at start time.
-
 ![Start a block — the expanded category picker, each entry showing its own focus and break durations.](../_screens/0.1.0/06-start-block.png){width=320}
-
-## Template — weekday targets
-
-**Template** is where you set targets per category per weekday. Once a template is in place, "today's plan" on the Today screen fills itself in automatically for the matching weekday, so you do not have to re-plan each morning.
 
 ![Template — per-category targets set for each weekday.](../_screens/0.1.0/02-template.png){width=320}
 
-## Stats
-
-**Stats** rolls up your completed focus time so you can see effort across categories and over time. It turns the individual blocks into a picture of where the hours actually went.
-
 ![Stats — completed focus time aggregated across categories and over time.](../_screens/0.1.0/03-stats.png){width=320}
-
-## Categories
-
-**Categories** manages the focus categories themselves: each has a name, a colour, and the default focus and break lengths used when you start a block. The colour is reused across the start-a-block picker, the plan, and the stats so a category stays recognisable everywhere.
 
 ![Categories — name, colour, and default focus/break lengths per category.](../_screens/0.1.0/04-categories.png){width=320}
 
-## Settings
-
-**Settings** covers the app preferences, including the theme (light / dark / system). It also surfaces the notification permission that signals the end of a block.
-
 ![Settings — theme selection and app preferences.](../_screens/0.1.0/05-settings.png){width=320}
-
-## Where to get it
-
-Établi Focus is **Android-only** at this stage and ships as a signed development-build APK.
-
-| Channel | Status |
-|---------|--------|
-| Android (signed APK) | **Development build** — [v0.1.0 release](https://github.com/etabli-dev/etabli-focus/releases/tag/v0.1.0) |
-| Google Play | planned — not yet available |
-| F-Droid | planned — not yet available |
-| App Store (iOS) | planned — not yet available |
-| Source code | [`etabli-dev/etabli-focus`](https://github.com/etabli-dev/etabli-focus) |
-
-To install: download `focus-0.1.0.apk` from the release, open it on your device, and allow notifications (used to signal the end of a block).

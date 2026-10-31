@@ -16,9 +16,9 @@ struct StatsView: View {
         let cal = Calendar.current
         switch window {
         case .week:
-            return cal.date(byAdding: .day, value: -6, to: cal.startOfDay(for: Date())) ?? Date()
+            return cal.date(byAdding: .day, value: -6, to: visibleDay) ?? visibleDay
         case .month:
-            return cal.date(byAdding: .day, value: -29, to: cal.startOfDay(for: Date())) ?? Date()
+            return cal.date(byAdding: .day, value: -29, to: visibleDay) ?? visibleDay
         }
     }
 
@@ -27,6 +27,8 @@ struct StatsView: View {
             $0.kind == "focus" && $0.completed && $0.startedAt >= windowStart
         }
     }
+
+    @State private var visibleDay = Calendar.current.startOfDay(for: Date())
 
     var body: some View {
         NavigationStack {
@@ -48,6 +50,12 @@ struct StatsView: View {
             }
             .navigationBarHidden(true)
         }
+        .task {
+            while !Task.isCancelled {
+                visibleDay = Calendar.current.startOfDay(for: Date())
+                do { try await Task.sleep(for: .seconds(1)) } catch { return }
+            }
+        }
     }
 
     private var totalsCard: some View {
@@ -56,7 +64,7 @@ struct StatsView: View {
                 bigNumber("blocks", "\(completedFocus.count)")
                 bigNumber("hours",
                           String(format: "%.1f",
-                                 completedFocus.reduce(0) { $0 + $1.plannedEnd.timeIntervalSince($1.startedAt) } / 3600))
+                                 completedFocus.reduce(0) { $0 + ($1.activeSeconds ?? max(0, $1.plannedEnd.timeIntervalSince($1.startedAt))) } / 3600))
             }
         }
     }

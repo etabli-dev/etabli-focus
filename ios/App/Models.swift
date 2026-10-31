@@ -73,7 +73,8 @@ public final class Session {
     public var categoryID: UUID          // not a relationship — survives category deletion
     public var startedAt: Date
     public var plannedEnd: Date
-    public var actualEnd: Date?          // nil while running / on cancel
+    public var actualEnd: Date?
+    public var activeSeconds: Double? = nil // Historical rows retain their original timing.
     public var completed: Bool
     public var kind: String              // "focus" or "break"
     public var note: String?

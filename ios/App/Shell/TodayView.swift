@@ -17,10 +17,10 @@ struct TodayView: View {
     @State private var selectedCategory: Category?
 
     private var todayWeekday: Int {
-        Calendar.current.component(.weekday, from: Date())
+        Calendar.current.component(.weekday, from: visibleDay)
     }
     private var todayStart: Date {
-        Calendar.current.startOfDay(for: Date())
+        visibleDay
     }
     private var todayPlan: [(category: Category, target: Int, completed: Int)] {
         categories.compactMap { cat in
@@ -36,11 +36,14 @@ struct TodayView: View {
         }
     }
 
+    @State private var visibleDay = Calendar.current.startOfDay(for: Date())
+
     var body: some View {
         NavigationStack {
             ZStack {
                 Theme.Color.paper.ignoresSafeArea()
                 ScrollView {
+                    if let error = engine.lastError { Text(error).padding(Theme.Space.lg) }
                     if sizeClass == .regular {
                         // iPad: side-by-side timer + plan.
                         HStack(alignment: .top, spacing: Theme.Space.lg) {
@@ -61,6 +64,12 @@ struct TodayView: View {
                 if let cat = selectedCategory {
                     TimerSheet(category: cat)
                 }
+            }
+        }
+        .task {
+            while !Task.isCancelled {
+                visibleDay = Calendar.current.startOfDay(for: Date())
+                do { try await Task.sleep(for: .seconds(1)) } catch { return }
             }
         }
     }

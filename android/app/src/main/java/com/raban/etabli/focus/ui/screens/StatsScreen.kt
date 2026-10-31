@@ -42,13 +42,9 @@ fun StatsScreen(app: EtabliFocusApplication) {
     var window by remember { mutableStateOf(Window.Week) }
     val categories by app.db.categoryDao().observeAll().collectAsState(initial = emptyList())
 
-    val rangeStart = remember(window) {
-        Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, -(window.days - 1))
-            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-    }
+    val today = rememberLocalDay()
+    val firstDay = today.date.minusDays((window.days - 1).toLong())
+    val rangeStart = firstDay.atStartOfDay(today.zone).toInstant().toEpochMilli()
 
     val sessions by app.db.sessionDao()
         .observeCompletedFocusSince(rangeStart)
@@ -56,16 +52,12 @@ fun StatsScreen(app: EtabliFocusApplication) {
 
     val totalMinutes = sessions.sumOf { s ->
         val end = s.actualEndEpoch ?: s.plannedEndEpoch
-        ((end - s.startedAtEpoch) / 60_000L).toInt()
+        ((s.activeMillis ?: (end - s.startedAtEpoch).coerceAtLeast(0)) / 60_000L).toInt()
     }
     val totalBlocks  = sessions.size
-    val perDay = remember(sessions, window) {
-        val buckets = IntArray(window.days)
-        sessions.forEach { s ->
-            val daysFromAnchor = ((s.startedAtEpoch - rangeStart) / (24L * 60 * 60 * 1000)).toInt()
-            if (daysFromAnchor in buckets.indices) buckets[daysFromAnchor]++
-        }
-        buckets.toList()
+    val perDay = remember(sessions, firstDay, window, today.zone) {
+        com.raban.etabli.focus.engine.dailySessionCounts(
+            sessions.map { it.startedAtEpoch }, firstDay, window.days, today.zone)
     }
     val perCategory = remember(sessions, categories) {
         sessions.groupBy { it.categoryID }

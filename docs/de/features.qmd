@@ -3,54 +3,22 @@ title: "Funktionen"
 sidebar: de
 ---
 
-Eine geführte Tour durch Établi Focus v0.1.0, Bildschirm für Bildschirm. Jede Abbildung unten ist ein echter Screenshot des Entwicklungs-Builds v0.1.0 auf einem Android-Emulator. Focus ist bewusst klein gehalten: Ziele pro Kategorie und Wochentag festlegen, einen getakteten Fokus-Block starten und die Statistik im Zeitverlauf wachsen sehen — vollständig offline, ohne Konto, ohne Telemetrie.
+Arbeitsblöcke nach Kategorie erfassen, pausieren und fortsetzen; Wochenziele und lokalen Verlauf anzeigen. Benachrichtigungen hängen von Geräteberechtigungen und Energiesparregeln ab.
 
-## Heute
+Diese Seite beschreibt den Quellstand vom Oktober 2026. Die Änderungen sind unveröffentlicht und nicht Teil älterer Entwicklungsreleases. Lokale Prüfungen ersetzen keine Geräte-, Live-Server- oder Store-Abnahme.
 
-Der Startbildschirm öffnet sich auf **Heute**. Er zeigt das aktuelle Datum als Breadcrumb im Terminal-Stil, eine **Jetzt**-Karte (was gerade läuft oder eine Aufforderung zum Start), den **Tagesplan** (die Ziele für diesen Wochentag) und die Aktion **Block starten**. Es ist der kürzeste Weg zu einer Session: Alles Nötige zum Start steht auf einem einzigen Bildschirm.
+[Current status / Aktueller Stand / État actuel](../current-status.qmd)
+
+Historische Bildschirmfotos aus v0.1.0; sie belegen keine Prüfung des aktuellen Quellstands.
 
 ![Heute — der Startbildschirm mit Jetzt-Karte, Tagesplan und der Aktion Block starten.](../_screens/0.1.0/01-today.png){width=320}
 
-## Einen Fokus-Block starten
-
-Ein Tippen auf **Block starten** klappt die Kategorie-Auswahl aus. Jede Kategorie trägt ihre eigenen Fokus- und Pausenzeiten (zum Beispiel 50 min Fokus · 10 min Pause), sodass die Auswahl einer Kategorie genügt, um eine getaktete Session zu beginnen — ohne weitere Einstellung beim Start.
-
 ![Block starten — die ausgeklappte Kategorie-Auswahl, jeder Eintrag mit eigenen Fokus- und Pausenzeiten.](../_screens/0.1.0/06-start-block.png){width=320}
-
-## Vorlage — Wochentags-Ziele
-
-In der **Vorlage** legt man die Ziele pro Kategorie und Wochentag fest. Sobald eine Vorlage hinterlegt ist, füllt sich der „Tagesplan“ auf dem Heute-Bildschirm für den passenden Wochentag automatisch, sodass nicht jeden Morgen neu geplant werden muss.
 
 ![Vorlage — Ziele pro Kategorie, festgelegt für jeden Wochentag.](../_screens/0.1.0/02-template.png){width=320}
 
-## Statistik
-
-Die **Statistik** summiert die abgeschlossene Fokuszeit, damit der Aufwand pro Kategorie und über die Zeit sichtbar wird. Aus den einzelnen Blöcken entsteht ein Bild davon, wofür die Stunden tatsächlich verwendet wurden.
-
 ![Statistik — abgeschlossene Fokuszeit, aggregiert über Kategorien und Zeitverlauf.](../_screens/0.1.0/03-stats.png){width=320}
-
-## Kategorien
-
-**Kategorien** verwaltet die Fokus-Kategorien selbst: Jede hat einen Namen, eine Farbe und die Standard-Fokus- und -Pausenzeiten, die beim Start eines Blocks verwendet werden. Die Farbe wird in der Start-Auswahl, im Plan und in der Statistik wiederverwendet, damit eine Kategorie überall wiedererkennbar bleibt.
 
 ![Kategorien — Name, Farbe und Standard-Fokus-/Pausenzeiten je Kategorie.](../_screens/0.1.0/04-categories.png){width=320}
 
-## Einstellungen
-
-**Einstellungen** umfasst die App-Voreinstellungen, darunter das Theme (Hell / Dunkel / System). Hier liegt auch die Benachrichtigungsberechtigung, die das Ende eines Blocks signalisiert.
-
 ![Einstellungen — Theme-Auswahl und App-Voreinstellungen.](../_screens/0.1.0/05-settings.png){width=320}
-
-## Bezug
-
-Établi Focus ist in diesem Stadium **nur für Android** verfügbar und wird als signierte Entwicklungs-Build-APK ausgeliefert.
-
-| Kanal | Status |
-|-------|--------|
-| Android (signierte APK) | **Entwicklungs-Build** — [Release v0.1.0](https://github.com/etabli-dev/etabli-focus/releases/tag/v0.1.0) |
-| Google Play | geplant — noch nicht verfügbar |
-| F-Droid | geplant — noch nicht verfügbar |
-| App Store (iOS) | geplant — noch nicht verfügbar |
-| Quellcode | [`etabli-dev/etabli-focus`](https://github.com/etabli-dev/etabli-focus) |
-
-Installation: `focus-0.1.0.apk` aus dem Release herunterladen, auf dem Gerät öffnen und Benachrichtigungen erlauben (signalisieren das Ende eines Blocks).

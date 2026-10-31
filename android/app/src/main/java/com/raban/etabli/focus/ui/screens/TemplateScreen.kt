@@ -17,6 +17,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.raban.etabli.focus.EtabliFocusApplication
 import com.raban.etabli.focus.data.TemplateEntryEntity
@@ -26,8 +31,8 @@ import java.util.Calendar
 
 // java.util.Calendar weekdays: SUNDAY=1 ... SATURDAY=7
 private val Weekdays = listOf(
-    2 to "Mon", 3 to "Tue", 4 to "Wed", 5 to "Thu",
-    6 to "Fri", 7 to "Sat", 1 to "Sun",
+    2 to "Monday", 3 to "Tuesday", 4 to "Wednesday", 5 to "Thursday",
+    6 to "Friday", 7 to "Saturday", 1 to "Sunday",
 )
 
 @Composable
@@ -62,28 +67,22 @@ fun TemplateScreen(app: EtabliFocusApplication) {
                                 ColorDot(cat.color())
                                 Text(cat.name, style = t.font.headline)
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(t.space.xs)) {
-                                Weekdays.forEach { (wd, label) ->
-                                    val current = lookup[wd to cat.id]?.targetBlocks ?: 0
-                                    WeekdayCell(
-                                        label = label,
-                                        value = current,
-                                        highlight = wd == today,
-                                        onChange = { newVal ->
-                                            scope.launch {
-                                                app.db.templateDao().upsert(
-                                                    TemplateEntryEntity(
-                                                        weekday = wd,
-                                                        categoryID = cat.id,
-                                                        targetBlocks = newVal,
-                                                    )
-                                                )
-                                            }
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                }
-                            }
+                            WeekdayTargets(
+                                categoryName = cat.name,
+                                targets = Weekdays.associate { (wd, _) -> wd to (lookup[wd to cat.id]?.targetBlocks ?: 0) },
+                                today = today,
+                                onChange = { weekday, newValue ->
+                                    scope.launch {
+                                        app.db.templateDao().upsert(
+                                            TemplateEntryEntity(
+                                                weekday = weekday,
+                                                categoryID = cat.id,
+                                                targetBlocks = newValue,
+                                            )
+                                        )
+                                    }
+                                },
+                            )
                         }
                         HorizontalHairline()
                     }
@@ -93,9 +92,45 @@ fun TemplateScreen(app: EtabliFocusApplication) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun WeekdayTargets(
+    categoryName: String,
+    targets: Map<Int, Int>,
+    today: Int,
+    onChange: (Int, Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val t = Coder.tokens
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        // Two 48 dp targets, their gap and cell padding must fit before adding a column.
+        val minimumCellWidth = 116.dp
+        val columns = ((maxWidth + t.space.sm) / (minimumCellWidth + t.space.sm))
+            .toInt().coerceIn(1, Weekdays.size)
+        val cellWidth = (maxWidth - t.space.sm * (columns - 1)) / columns
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(t.space.sm),
+            verticalArrangement = Arrangement.spacedBy(t.space.sm),
+            maxItemsInEachRow = columns,
+        ) {
+            Weekdays.forEach { (weekday, name) ->
+                WeekdayCell(
+                    name = name,
+                    categoryName = categoryName,
+                    value = targets[weekday] ?: 0,
+                    highlight = weekday == today,
+                    onChange = { onChange(weekday, it) },
+                    modifier = Modifier.width(cellWidth),
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun WeekdayCell(
-    label: String,
+    name: String,
+    categoryName: String,
     value: Int,
     highlight: Boolean,
     onChange: (Int) -> Unit,
@@ -113,29 +148,39 @@ private fun WeekdayCell(
                 if (highlight) t.color.accent else t.color.hairline,
                 RoundedCornerShape(t.radius.sm),
             )
-            .padding(vertical = t.space.sm, horizontal = t.space.xs),
+            .padding(t.space.sm),
     ) {
-        MonoLabel(label.lowercase(), color = if (highlight) t.color.accent else t.color.faint)
-        Text(value.toString(), style = t.font.headline)
+        Text(name.take(3).lowercase(), style = t.font.mono,
+            color = if (highlight) t.color.accent else t.color.faint,
+            modifier = Modifier.clearAndSetSemantics {
+                contentDescription = if (highlight) "$name, today" else name
+            })
+        Text(value.toString(), style = t.font.headline,
+            modifier = Modifier.clearAndSetSemantics {
+                contentDescription = "$name target for $categoryName"
+                stateDescription = "$value blocks"
+            })
         Row(horizontalArrangement = Arrangement.spacedBy(t.space.xs)) {
-            TinyButton("−") { if (value > 0) onChange(value - 1) }
-            TinyButton("+") { if (value < 8) onChange(value + 1) }
+            TargetButton("−", "Decrease $name target for $categoryName", enabled = value > 0) { onChange(value - 1) }
+            TargetButton("+", "Increase $name target for $categoryName", enabled = value < 8) { onChange(value + 1) }
         }
     }
 }
 
 @Composable
-private fun TinyButton(label: String, onClick: () -> Unit) {
+private fun TargetButton(label: String, description: String, enabled: Boolean, onClick: () -> Unit) {
     val t = Coder.tokens
     Box(
         modifier = Modifier
-            .size(24.dp)
+            .size(48.dp)
             .clip(RoundedCornerShape(t.radius.sm))
             .background(t.color.paper)
             .border(1.dp, t.color.hairline, RoundedCornerShape(t.radius.sm))
-            .clickable(onClick = onClick),
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, style = t.font.caption)
+        Text(label, style = t.font.caption, color = if (enabled) t.color.ink else t.color.faint,
+            modifier = Modifier.clearAndSetSemantics { })
     }
 }

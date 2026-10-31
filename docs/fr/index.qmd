@@ -3,44 +3,10 @@ title: "Établi Focus"
 sidebar: fr
 ---
 
-<img src="../_icons/icon-focus.svg" alt="" width="80" align="right" style="margin:0 0 1rem 1rem;">
+Suivre des séances par catégorie, les mettre en pause et les reprendre, avec objectifs hebdomadaires et historique local. Les notifications dépendent des autorisations et des règles d’économie d’énergie du système.
 
-<span class="etabli-badge">Outil hors ligne</span>
+Cette page décrit les sources d’octobre 2026. Ces modifications ne sont pas publiées et ne figurent pas dans les anciennes versions de développement. Les contrôles locaux ne remplacent pas la validation sur appareil, serveur réel ou boutique.
 
-> Suivre les séances de concentration par catégorie.
+[Fonctions actuelles, prérequis et commandes (en anglais)](../current-status.qmd)
 
-Établi Focus est un tracker de séances Pomodoro et de concentration. Les blocs de travail sont enregistrés par catégorie (travail en profondeur, revue, admin, recherche, manuscrit, analyse de données) avec des durées de concentration et de pause configurables et des notifications locales. Les minuteurs survivent au force-quit et au redémarrage. Entièrement hors ligne.
-
-![Focus — vue du jour avec catégories et historique.](../_screens/0.1.0/01-today.png){width=320}
-
-## À qui ça s'adresse
-
-À toute personne souhaitant consigner proprement son travail concentré sur plusieurs séances — pour le suivi personnel, la facturation, ou comme matière à une organisation plus consciente.
-
-## Plateformes
-
-| Plateforme | Statut |
-|------------|--------|
-| iOS        | ✓      |
-| Android    | ✓      |
-
-## Vie privée
-
-Aucun outil d'analyse, aucun SDK tiers. L'appli fonctionne entièrement hors ligne ; les séances et catégories restent uniquement sur l'appareil.
-
-## Installation
-
-Établi Focus est **en cours de développement actif**. Il n'existe pas encore de version App Store, Google Play ou F-Droid.
-
-| Canal | Statut |
-|-------|--------|
-| Android (APK) | **Version de développement** via [GitHub Releases](https://github.com/etabli-dev/etabli-focus/releases) |
-| App Store (iOS) | prévu — pas encore disponible |
-| Google Play | prévu — pas encore disponible |
-| F-Droid | prévu — pas encore disponible |
-
-Détails : voir [Premiers pas](getting-started.qmd).
-
-## Soutenir
-
-Si l'appli vous est utile : [Liberapay](https://liberapay.com/rabanheller/).
+[README](https://github.com/etabli-dev/etabli-focus/blob/main/README.md) · [GitHub](https://github.com/etabli-dev/etabli-focus)

@@ -43,6 +43,7 @@ data class SessionEntity(
     val completed: Boolean,
     val kind: String,                     // "focus" | "break"
     val note: String? = null,
+    val activeMillis: Long? = null, // null for historical rows; never rewrite their provenance
 )
 
 @Entity(tableName = "template_entry", primaryKeys = ["weekday", "categoryID"])

@@ -29,6 +29,7 @@ class EtabliFocusApplication : Application() {
         db = AppDatabase.get(this)
         engine = PomodoroEngine.get(this, db, appScope)
         themeRepo = ThemeRepo(this)
+        engine.restoreAlarm()
         // First-launch seeding: insert default categories if the table is empty.
         appScope.launch {
             if (db.categoryDao().count() == 0) {

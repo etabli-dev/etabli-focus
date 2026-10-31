@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Pure-Compose app: we don't ship the Material Components / Material3
+      XML styles (only the Compose Material3 library). Use a minimal
+      system theme as the base — Compose handles all colors/typography
+      via CoderTheme inside setContent. The status / nav bar tinting is
+      applied separately by the activity, so the theme just needs to
+      strip the action bar and avoid imposing a typeface.
+    -->
+    <style name="Theme.EtabliFocus" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/coder_paper</item>
+        <item name="android:navigationBarColor">@color/coder_paper</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">@color/coder_paper</item>
+    </style>
+</resources>
