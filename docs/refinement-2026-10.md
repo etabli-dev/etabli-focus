@@ -63,3 +63,11 @@ remaining device and release checks before distribution.
 Debug APK SHA-256: `74f34a8f7ca988b637df28b1e5315c388a894324bb654f2ec0020f2dafccf5f1`.
 
 Unsigned AAB SHA-256: `89c1b91d17c8e363b00a0c117e0fcf99b9f4cb4a3c62d379302f19ddce30fd03`.
+
+## Local Android UI verification — 2026-11-02
+
+On 2026-11-02, the final debug APK (SHA-256 `74f34a8f7ca988b637df28b1e5315c388a894324bb654f2ec0020f2dafccf5f1`) passed a real five-minute timer journey on the owned Android 15/API 35 ARM64 emulator with 4 KiB pages. A fresh category retained its paused 04:47 state across relaunch; resume, background/late-foreground completion and Stats produced exactly one block/five minutes. Relaunch did not duplicate completion, cancelling a second paused block added nothing, and Monday target 1 persisted with all seven weekday controls visible in two columns. Notification permission was denied; granted delivery, Doze/reboot, physical devices, API 36/16 KiB execution and store acceptance remain unverified. Navigation labels wrapped at 390 dp but remained usable.
+
+The suite workspace retains `android-local/retry-20261102/native-journey-results.json`, exact installed APK hashes and timestamped XML/screenshots/logs. All grouped cases above passed within their stated scope; boot-time system ANRs preceded the pass and are retained in that record.
+
+The alarm-permission source commit `ff2df6fac6fb8ba8fa4b7f8f450c31a84f862cd7` passed Android CI. Both iOS attempts in [run 41478549226](https://github.com/etabli-dev/etabli-focus/actions/runs/41478549226) ended before a hosted runner was acquired; no iOS steps executed. This is an infrastructure evidence gap, not an iOS build pass or an observed application failure.
