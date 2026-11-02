@@ -34,3 +34,32 @@ Local verification on 2026-10-30: `testDebugUnitTest lintDebug assembleDebug bun
 Confirmed from layout constraints: at 390 dp width, outer and card padding leave 326 dp. Seven weighted cells plus six 4 dp gaps leave about 43 dp per cell, although two 24 dp controls, their gap and padding need 60 dp. The controls could clip or overlap, and their nominal touch size was too small. Weekdays now wrap into as many minimum-116-dp cells as fit, with 48 dp action targets, full weekday/category accessibility labels, exposed block counts and disabled decrement/increment at 0/8. Narrow screens scroll through the same seven weekdays; tablet widths retain more columns.
 
 Final native build evidence (2026-10-30, inspected 2026-10-31): `testDebugUnitTest lintDebug assembleDebug bundleRelease` passed in `focus-android-layout-final`. The JUnit XML records 15 tests, zero failures, errors or skips. All four Compose layout/interaction checks pass at 390 dp, 320 dp with 2x text, and 840 dp; 48 dp action targets stay in bounds and do not overlap, and block limits remain enforced. Debug APK and unsigned release AAB include these changes. Installed user journeys and signing/store acceptance remain separate gates.
+
+## Exact-alarm manifest repair — 2026-11-02
+
+The actual APK requested both exact-alarm permissions without a version boundary.
+The manifest now follows [Android's documented split](https://developer.android.com/reference/android/Manifest.permission#USE_EXACT_ALARM):
+`SCHEDULE_EXACT_ALARM` ends at API 32; `USE_EXACT_ALARM` serves the core timer on
+API 33+. This removes the overlapping declaration on newer devices. The existing
+`SecurityException` fallback to an inexact alarm is unchanged. Notification
+consent remains separate; a user gesture alone does not establish permission
+eligibility or store acceptance.
+
+The full local `testDebugUnitTest lintDebug assembleDebug bundleRelease` run
+passed (`focus-alarm-permission-android-20261102`), including all 15 tests without
+failures or skips. Read-only inspection of the built APK with `apkanalyzer` and
+the actual AAB with checksum-verified official bundletool 1.18.3 confirmed the
+same version split, minimum API 26 and target API 36. The APK signature verifies
+as Android Debug; the release AAB has no signing block and is unsigned. The
+workspace receipt `focus-alarm-package-verification-20261102.json` retains exact
+commands, raw manifests and artifact hashes. These package checks do not execute
+alarm delivery or establish device/store acceptance.
+
+The Android submission guide now matches SDK 36 and the actual optional private
+signing configuration. It no longer assumes a placeholder keystore exists or
+instructs replacing an existing key. Preserve signing identities and complete the
+remaining device and release checks before distribution.
+
+Debug APK SHA-256: `74f34a8f7ca988b637df28b1e5315c388a894324bb654f2ec0020f2dafccf5f1`.
+
+Unsigned AAB SHA-256: `89c1b91d17c8e363b00a0c117e0fcf99b9f4cb4a3c62d379302f19ddce30fd03`.

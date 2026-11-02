@@ -1,64 +1,108 @@
 # Établi Focus — Android submission checklist
 
-## Build outputs
-- **Debug APK** — `app/build/outputs/apk/debug/app-debug.apk`
-  - Signed with the Android debug keystore. App ID is `com.raban.etabli.focus.debug` (`.debug` suffix) so it can coexist with the release build on the same device.
-- **Release AAB** — `app/build/outputs/bundle/release/app-release.aab`
-  - R8 + resource shrinking enabled. Signed with `app/upload-keystore.jks`.
-  - This is what you upload to the Play Console.
+This guide describes the current source and release prerequisites. Observed build
+and test results are recorded in [the refinement record](../docs/refinement-2026-10.md).
+Compilation, local installation and Google Play acceptance are separate checks.
 
-## Signing
-The upload keystore is `app/upload-keystore.jks`. Credentials live in `keystore.properties` (gitignored).
+## Toolchain and build outputs
 
-> **Important**: the keystore was generated locally with a placeholder password (`android`). Before publishing, either:
-> 1. Re-generate the keystore with a real password and update `keystore.properties`, **or**
-> 2. Use Play App Signing — upload this keystore as your upload key, and let Google manage the signing key. Either way, **back up `upload-keystore.jks` somewhere safe**. If you lose it, you cannot ship updates to the same app.
+Use JDK 17, Android SDK Platform 36 and Build Tools 35.0.0. Set `JAVA_HOME` and
+`ANDROID_HOME`; the pinned wrapper supplies Gradle 8.13 with AGP 8.13.2. The app
+compiles and targets API 36 and supports API 26+. As checked on 2026-11-02, API 36
+meets the [Google Play target requirement for new apps and updates](https://developer.android.com/google/play/requirements/target-sdk);
+check the requirement again at submission time.
 
-To regenerate with a strong password:
-```bash
-keytool -genkeypair -v -keystore app/upload-keystore.jks -alias upload \
-  -keyalg RSA -keysize 2048 -validity 10000 \
-  -dname "CN=Your Name, O=Your Org, C=DE"
+From the repository root:
+
+```sh
+cd android
+./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug bundleRelease
 ```
 
-## What's done (technical)
-- Target SDK 34, min SDK 26
-- Kotlin 1.9.24 + Compose BOM 2024.06.00
-- Room 2.6.1 + DataStore Preferences
-- AlarmManager + BroadcastReceiver for "focus complete" notifications
-- POST_NOTIFICATIONS requested at runtime on Android 13+
-- SCHEDULE_EXACT_ALARM with graceful fallback to inexact alarms
-- Adaptive icon (mipmap-anydpi-v26 + monochrome vector)
-- Edge-to-edge insets via `enableEdgeToEdge()`
-- Light + Dark themes with in-app Auto/Light/Dark override (persisted in DataStore)
-- Backup rules + data extraction rules declared
-- R8 + resource shrinking on release
-- Proguard rules keep persisted enum names (TimerPhase/TimerKind/ThemePreference) so state survives upgrades
+| Output | Identity and signing |
+|---|---|
+| `app/build/outputs/apk/debug/app-debug.apk` | Android debug signing; ID `com.raban.etabli.focus.debug`, separate from release data. |
+| `app/build/outputs/bundle/release/app-release.aab` | ID `com.raban.etabli.focus`; R8 and resource shrinking enabled. Unsigned unless private release signing is configured. |
 
-## What you must do before publishing
-- [ ] **Real upload key** — see signing section above
-- [ ] **Privacy policy URL** — required for Play Store. Even though this app is fully offline and stores nothing remote, Google requires a URL declaring exactly that
-- [ ] **Store listing assets**:
-  - Short description (≤80 chars) and full description (≤4000 chars)
-  - 512×512 PNG hi-res icon
-  - 1024×500 PNG feature graphic
-  - At least 2 phone screenshots (1080×1920+ portrait works)
-- [ ] **Content rating questionnaire** — IARC, takes 5 min in Play Console
-- [ ] **Data safety form** — declare: collects no user data, no third-party SDKs, no ads
-- [ ] **Target audience and content** — pick "Adults" unless you intend children
-- [ ] **App category** — "Productivity"
-- [ ] **Pricing & distribution** — free/paid + countries
-- [ ] **Optional** — declare `com.google.android.gms.permission.AD_ID` exclusion (you don't request it, but the Play Console form asks)
+An unsigned AAB is a review artifact, not a Play upload. Output existence alone
+does not establish signing, device behavior or store readiness.
 
-## Test before upload
-```bash
-# Install debug variant
+## Private release signing
+
+`app/build.gradle.kts` optionally reads `android/keystore.properties`. A `storeFile`
+entry enables release signing; `storePassword`, `keyAlias` and `keyPassword` must
+match the private keystore. Relative `storeFile` paths resolve from `android/`;
+an absolute path outside the checkout also works. Without that configuration,
+release builds remain unsigned. A configured missing or invalid key fails the
+build rather than silently producing a signed release.
+
+No particular keystore, alias or password is assumed to exist. Use the upload
+identity registered for this application, or establish one for a new application.
+Preserve existing keys, certificates and backups; do not replace a key merely to
+follow this guide. The repository ignores `keystore.properties`, `*.jks` and
+`*.keystore`; keep credentials and key backups private.
+
+[Play App Signing](https://developer.android.com/studio/publish/app-signing)
+separates the upload key from the app signing key used for distributed APKs.
+Configure it for bundle distribution and verify the upload certificate before
+uploading. A lost upload key can be reset through Play's process; losing an
+unmanaged app signing key has different consequences for updates. A debug key is
+not the release upload identity.
+
+## Implemented Android scope
+
+- Core focus/break timer with pause/resume, weekly targets and local history.
+- Room history and DataStore timer preferences, with preserving migrations and stable persisted enum names.
+- AlarmManager completion notifications and restoration of an active alarm after reboot.
+- Kotlin 1.9.24, Compose, edge-to-edge layout and persisted Auto/Light/Dark themes.
+
+## Timer and notification permissions
+
+The manifest follows the [documented exact-alarm permission split](https://developer.android.com/reference/android/Manifest.permission#USE_EXACT_ALARM):
+
+| Android version | Exact-alarm behavior |
+|---|---|
+| API 26–30 | `AlarmManager.setExact` does not require either newer exact-alarm permission. |
+| API 31–32 | `SCHEDULE_EXACT_ALARM` special access applies; the declaration ends at `maxSdkVersion="32"`. |
+| API 33+ | `USE_EXACT_ALARM` applies to the core timer and is automatically granted, independently of notification consent. |
+
+`NotificationScheduler` retains its inexact fallback if exact scheduling throws
+`SecurityException`. The current UI does not open a special-access request screen
+for exact alarms. On API 33+ it separately requests `POST_NOTIFICATIONS`; denying
+that permission suppresses notifications without granting or revoking exact-alarm
+access. `RECEIVE_BOOT_COMPLETED` lets the receiver restore an active timer's alarm.
+
+[Google Play's exact-alarm policy](https://support.google.com/googleplay/android-developer/answer/16558241?hl=en)
+recognizes core alarm/timer functionality, but use of `USE_EXACT_ALARM` is reviewed.
+Describe the implemented timer accurately in the listing and permission declaration;
+a user gesture alone does not establish store acceptance.
+
+## Device and release review
+
+From `android/`, install the debug artifact on a designated test device without
+clearing existing app data:
+
+```sh
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.raban.etabli.focus.debug/com.raban.etabli.focus.MainActivity
-
-# Install the release bundle locally for verification (via bundletool)
-# brew install bundletool
-bundletool build-apks --bundle=app/build/outputs/bundle/release/app-release.aab \
-  --output=/tmp/focus.apks --mode=universal
-bundletool install-apks --apks=/tmp/focus.apks
 ```
+
+For the minified bundle, use [Android Studio or bundletool](https://developer.android.com/tools/bundletool)
+to generate and install a test APK set with an explicitly chosen signing identity.
+Without signing options, bundletool may use a debug key; this does not validate the
+Play upload certificate. Keep test installs separate from any production release
+whose data and signing identity must be preserved.
+
+- [ ] Run tests, lint and debug/release packaging for the exact candidate commit; retain results and artifact hashes.
+- [ ] Inspect the final APK/AAB manifest and verify minimum/target SDK, requested permissions, signatures and native-library/ZIP alignment. Keep 16 KiB-device execution separate from static alignment checks.
+- [ ] Exercise start, pause, resume, cancel, completion/history, weekly targets, rotation, large text and accessibility.
+- [ ] Test notification denial and granted delivery on API 33+, exact-access fallback on API 31/32, background/doze, reboot, force-stop and reopening. Do not expect force-stopped applications to deliver normally.
+- [ ] Validate an installed upgrade from existing Room data and timer preferences without deleting history; test backup/restore separately.
+- [ ] Configure and verify the private upload key, Play App Signing, release version code and recovery backups. Generate and inspect the signed release candidate.
+- [ ] Provide a working privacy-policy URL and in-app policy access. Complete [Data safety and SDK review](https://support.google.com/googleplay/android-developer/answer/10144311?hl=en) against the actual artifact. Local timer/history data and platform backups must be described accurately. Do not substitute a blanket “no third-party SDKs” assertion.
+- [ ] Prepare listing text, icon, feature graphic and screenshots of the current app. Complete content rating, accurate target audience, app category, advertising declaration, pricing and distribution in Play Console.
+- [ ] Complete applicable permission declarations and account-specific testing/release requirements. Validate the signed candidate on an internal test track before requesting production rollout.
+
+Publishing source or documentation does not publish an Android app. A signed
+release, Play upload, policy approval and production rollout require their own
+recorded outcomes.

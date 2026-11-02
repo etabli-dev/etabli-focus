@@ -35,8 +35,9 @@ class NotificationScheduler(private val context: Context) {
         val pending = pendingIntent(kind)
         // Cancel any prior scheduled completion.
         cancel()
-        // On Android 12+ exact alarms require either user grant OR a privileged
-        // use case. We try exact first, fall back to inexact on SecurityException.
+        // Android 12/12L uses SCHEDULE_EXACT_ALARM special app access; Android
+        // 13+ uses USE_EXACT_ALARM for this app's core timer function. Preserve
+        // the inexact fallback if the platform refuses exact scheduling.
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pending)
