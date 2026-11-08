@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keep Android's default backup set; cache and noBackupFilesDir stay excluded. -->
+<full-backup-content />
