@@ -69,6 +69,21 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun TodayScreen(app: FocusApp) {
+    var showCalendar by remember { mutableStateOf(false) }
+    if (showCalendar) {
+        com.raban.etabli.focus.calendar.CalendarPanel(app.calendar) { showCalendar = false }
+        return
+    }
+    var showFlowSavvy by remember { mutableStateOf(false) }
+    if (showFlowSavvy) {
+        val flowCategories by app.db.categoryDao().observeAll().collectAsState(initial = emptyList())
+        val flowTimer by app.engine.state.collectAsState()
+        com.raban.etabli.focus.flowsavvy.FlowSavvyPanel(app.flowSavvy, flowCategories,
+            flowTimer.phase == TimerPhase.Idle, { showFlowSavvy = false }) { category, minutes, link ->
+            app.engine.start(category, TimerKind.Focus, minutes, link)
+        }
+        return
+    }
     val t = Coder.tokens
     val categories by remember { app.db.categoryDao().observeAll() }.collectAsState(initial = emptyList())
     val templates by remember { app.db.templateDao().observeAll() }.collectAsState(initial = emptyList())
@@ -91,6 +106,9 @@ fun TodayScreen(app: FocusApp) {
             verticalArrangement = Arrangement.spacedBy(t.space.lg),
         ) {
             PromptHeader(listOf("today", today.date.toString()))
+            com.raban.etabli.focus.calendar.CalendarUpcoming(app.calendar) { showCalendar = true }
+            androidx.compose.material3.OutlinedButton(onClick = { showFlowSavvy = true }) { Text("FlowSavvy tasks") }
+            state.flowTaskLink?.let { raw -> runCatching { org.json.JSONObject(raw).optString("title") }.getOrNull()?.let { Text(it) } }
             timerError?.let { Text(it, style = t.font.body.copy(color = t.color.danger)) }
             if (wide) {
                 Row(horizontalArrangement = Arrangement.spacedBy(t.space.lg)) {

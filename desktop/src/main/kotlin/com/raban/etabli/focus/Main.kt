@@ -92,6 +92,17 @@ private fun ApplicationScope.FocusDesktop(app: FocusApp) {
     val status = statusLine(timer, now)
 
     LaunchedEffect(Unit) {
+        app.calendarNotifications.alerts.collect { reminder ->
+            val timing = if (reminder.minutesBefore > 0) "In ${reminder.minutesBefore} minutes" else "Starting now"
+            if (isTraySupported) trayState.sendNotification(Notification(
+                "Calendar: ${reminder.entry.title}",
+                "$timing · ${com.raban.etabli.focus.calendar.calendarTime(reminder.entry)}. Open Focus to view your calendar.",
+                Notification.Type.Info,
+            ))
+            visible = true
+        }
+    }
+    LaunchedEffect(Unit) {
         app.completed.collect { session ->
             val notice = CompletionNotice.forSession(session)
             val delivered = withContext(Dispatchers.IO) { LinuxNotifications.send(notice) }

@@ -25,3 +25,7 @@ Read the [repository README](https://github.com/etabli-dev/etabli-focus/blob/mai
 Observed remote verification on 2026-10-31: [commit `00e3c5dce3ab`](https://github.com/etabli-dev/etabli-focus/commit/00e3c5dce3ab6207a108ff4f4cd10d9c1f2f8e47) passed [Android tests, lint, debug APK and unsigned release AAB packaging, plus the full unsigned iOS simulator build](https://github.com/etabli-dev/etabli-focus/actions/runs/41200540333). Its [documentation build and deployment](https://github.com/etabli-dev/etabli-focus/actions/runs/41200540311) also passed. Device journeys, live-service acceptance where applicable, release signing and store submission remain separate from these results.
 
 The November 2 API 35/4 KiB emulator pass completed a real five-minute block, pause/resume and restart persistence, exactly-once statistics, cancellation and weekly-target checks with notification permission denied. Physical-device delivery, Doze/reboot, iOS runtime and API 36/16 KiB operation remain separate checks.
+
+## Task and calendar integrations
+
+Optional FlowSavvy integration links focus sessions to tasks, reports active minutes and requires confirmation before completing a task. Calendar reminders support system-synced calendars on iOS and direct read-only CalDAV on Android/desktop. See the [setup and verification guide](https://github.com/etabli-dev/etabli-focus/blob/main/docs/integrations-2026-11.md).

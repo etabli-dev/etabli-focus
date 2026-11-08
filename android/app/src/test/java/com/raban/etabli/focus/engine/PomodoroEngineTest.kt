@@ -80,4 +80,16 @@ class PomodoroEngineTest {
             assertEquals(listOf(1, 1, 1), dailySessionCounts(times, start, 3, zone))
         }
     }
+    @Test fun flowTaskAssociationIsPersistedOnlyForFocus() = fixture { engine, history, clock, _ ->
+        val link = "{\"id\":\"task-one\"}"
+        engine.start("category", TimerKind.Focus, 1, link).join()
+        clock(1_060_000L)
+        engine.tick().join()
+        assertEquals("flowsavvy:v1:$link", history.single().note)
+        engine.start("category", TimerKind.ShortBreak, 1, link).join()
+        clock(1_120_000L)
+        engine.tick().join()
+        assertEquals(null, history.last().note)
+    }
+
 }

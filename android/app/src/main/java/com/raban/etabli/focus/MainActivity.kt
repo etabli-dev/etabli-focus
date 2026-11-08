@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestNotificationsIfNeeded()
+        if (intent.getBooleanExtra("open_calendar", false)) app.openCalendar.value = true
         setContent {
             val preference by app.themeRepo.flow.collectAsState(initial = ThemePreference.System)
             CoderTheme(darkOverride = preference.darkOverride()) {
@@ -42,6 +43,18 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        if (intent.getBooleanExtra("open_calendar", false)) app.openCalendar.value = true
+    }
+
+    override fun onStart() {
+        super.onStart()
+        app.engine.restoreAlarm()
+        app.flowSavvy.refresh()
+        app.calendar.refresh()
     }
 
     private fun requestNotificationsIfNeeded() {

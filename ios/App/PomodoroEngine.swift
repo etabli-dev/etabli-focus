@@ -43,7 +43,7 @@ public final class PomodoroEngine {
 
     // MARK: - Control
 
-    public func start(categoryID: UUID, kind: TimerState.Kind, minutes: Int) {
+    public func start(categoryID: UUID, kind: TimerState.Kind, minutes: Int, flowSavvyLink: String? = nil) {
         guard state.phase == .idle, (1...1440).contains(minutes) else { return }
         let seconds = Double(minutes) * 60
         let now = Date()
@@ -52,6 +52,7 @@ public final class PomodoroEngine {
         s.kind = kind
         s.categoryID = categoryID
         s.sessionID = UUID()
+        s.flowSavvyLink = kind == .focus ? flowSavvyLink : nil
         s.startedAt = now
         s.endDate = now.addingTimeInterval(seconds)
         s.pausedRemainingSeconds = nil
@@ -131,6 +132,7 @@ public final class PomodoroEngine {
             }
             session.actualEnd = actualEnd
             session.activeSeconds = active
+            session.note = state.flowSavvyLink
             session.completed = completed
             session.kind = state.kind == .focus ? "focus" : "break"
             try context.save()

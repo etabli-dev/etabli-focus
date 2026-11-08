@@ -8,6 +8,9 @@ struct SettingsView: View {
     @AppStorage("scholarfocus.longBreak.afterN") private var longBreakAfter: Int = 4
     @AppStorage("scholarfocus.longBreak.minutes") private var longBreakMinutes: Int = 20
 
+    @State private var showingFlowSavvy = false
+    @State private var showingCalendar = false
+
     private var theme: ThemePreference { ThemePreference(rawValue: themeRaw) ?? .system }
 
     var body: some View {
@@ -19,6 +22,8 @@ struct SettingsView: View {
                         PromptHeader(["settings"])
                         Text("Settings")
                             .font(Theme.Font.display).foregroundStyle(Theme.Color.ink)
+                        Button("Connect FlowSavvy") { showingFlowSavvy = true }
+                        Button("Calendar accounts and reminders") { showingCalendar = true }
                         themeCard
                         breakCard
                         aboutCard
@@ -26,6 +31,8 @@ struct SettingsView: View {
                 }
             }
             .navigationBarHidden(true)
+            .sheet(isPresented: $showingFlowSavvy) { FlowSavvyView() }
+            .sheet(isPresented: $showingCalendar) { CalendarAgendaView() }
         }
     }
 
@@ -69,7 +76,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: Theme.Space.sm) {
                 Text("EtabliFocus")
                     .font(Theme.Font.headline).foregroundStyle(Theme.Color.ink)
-                Text("Pomodoro for academic work — category-aware, weekly-template-driven, completion stats. Offline only; no analytics; no tracking.")
+                Text("Pomodoro for academic work — category-aware, weekly-template-driven, completion stats. Local history, optional FlowSavvy sync; no analytics or tracking.")
                     .font(Theme.Font.body).foregroundStyle(Theme.Color.faint)
                 MonoLabel("v\(Bundle.main.shortVersion) (\(Bundle.main.buildVersion))",
                           color: Theme.Color.faint)

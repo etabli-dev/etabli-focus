@@ -14,10 +14,14 @@ version = "0.1.0"
 
 kotlin {
     jvmToolchain(17)
+    sourceSets.main { kotlin.srcDir("../shared/src/main/kotlin") }
 }
 
 dependencies {
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("net.sf.biweekly:biweekly:0.6.8")
     implementation(compose.desktop.currentOs)
+    implementation("org.json:json:20240303")
     implementation(compose.material3)
     implementation("org.jetbrains.compose.material:material-icons-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
@@ -53,7 +57,7 @@ compose.desktop {
             copyright = "Copyright 2026 R. Heller"
             licenseFile.set(rootProject.file("../LICENSE"))
             // From ./gradlew suggestRuntimeModules (sqlite-jdbc needs java.sql).
-            modules("java.instrument", "java.sql", "jdk.unsupported")
+            modules("java.instrument", "java.sql", "java.xml", "jdk.crypto.ec", "jdk.unsupported")
 
             linux {
                 packageName = "etabli-focus"

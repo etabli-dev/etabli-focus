@@ -42,5 +42,13 @@ jobs:
         run: |
           swiftc ios/App/TimerState.swift scripts/check_timer.swift -o "$RUNNER_TEMP/focus-timer-check"
           "$RUNNER_TEMP/focus-timer-check"
+      - name: Test task sync and calendar reminders with fixtures
+        run: |
+          swiftc ios/App/FlowSavvy/FlowSavvyCore.swift scripts/check_flowsavvy.swift -o "$RUNNER_TEMP/focus-flow-check"
+          "$RUNNER_TEMP/focus-flow-check"
+          swiftc ios/App/Calendar/CalendarReminderPlan.swift scripts/check_calendar_reminders.swift -o "$RUNNER_TEMP/focus-calendar-check"
+          "$RUNNER_TEMP/focus-calendar-check"
       - name: Build unsigned iOS simulator application
         run: xcodebuild -project ios/EtabliFocus.xcodeproj -scheme EtabliFocus -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - name: Build unsigned iOS device Release app
+        run: xcodebuild -project ios/EtabliFocus.xcodeproj -scheme EtabliFocus -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build

@@ -80,6 +80,13 @@ class NotificationScheduler(private val context: Context) {
 
 class TimerCompletionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        // Persist the completed block even if the UI is not visible. Network sync
+        // is independent and will retry when the app resumes.
+        val application = context.applicationContext as? com.raban.etabli.focus.EtabliFocusApplication
+        if (application != null) {
+            val pending = goAsync()
+            application.engine.tick().invokeOnCompletion { pending?.finish() }
+        }
         val kindName = intent.getStringExtra(EXTRA_KIND) ?: TimerKind.Focus.name
         val kind = runCatching { TimerKind.valueOf(kindName) }.getOrDefault(TimerKind.Focus)
 

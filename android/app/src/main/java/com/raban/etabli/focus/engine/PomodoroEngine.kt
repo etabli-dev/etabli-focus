@@ -52,6 +52,7 @@ private object Keys {
     val pausedRemaining  = longPreferencesKey("pausedRemaining")
     val totalSeconds     = longPreferencesKey("totalSeconds")
     val blocksInSet      = intPreferencesKey("blocksInSet")
+    val flowTaskLink     = stringPreferencesKey("flowTaskLink")
     val touched          = booleanPreferencesKey("touched")
 }
 
@@ -97,7 +98,7 @@ class PomodoroEngine internal constructor(
 
     private suspend fun current() = readState(store.data.first())
 
-    fun start(categoryID: String, kind: TimerKind, minutes: Int) = command {
+    fun start(categoryID: String, kind: TimerKind, minutes: Int, flowTaskLink: String? = null) = command {
         require(categoryID.isNotBlank() && minutes in 1..1440)
         val previous = current()
         if (previous.phase != TimerPhase.Idle) return@command
@@ -105,6 +106,7 @@ class PomodoroEngine internal constructor(
         val now = nowMillis()
         val end = now + seconds * 1000
         store.edit { p ->
+            if (kind == TimerKind.Focus && flowTaskLink != null) p[Keys.flowTaskLink] = flowTaskLink else p.remove(Keys.flowTaskLink)
             p[Keys.phase] = TimerPhase.Running.name
             p[Keys.kind] = kind.name
             p[Keys.categoryID] = categoryID
@@ -181,6 +183,7 @@ class PomodoroEngine internal constructor(
             p[Keys.phase] = TimerPhase.Idle.name
             p.remove(Keys.endEpoch)
             p.remove(Keys.sessionID)
+            p.remove(Keys.flowTaskLink)
             if (s.kind == TimerKind.Focus) p[Keys.blocksInSet] = s.blocksCompletedInSet + 1
         }
         cancelAlarm()
@@ -198,6 +201,7 @@ class PomodoroEngine internal constructor(
             plannedEndEpoch = s.endEpochMillis ?: now,
             actualEndEpoch = end, activeMillis = active,
             completed = completed, kind = if (s.kind == TimerKind.Focus) "focus" else "break",
+            note = if (s.kind == TimerKind.Focus) s.flowTaskLink?.let { "flowsavvy:v1:$it" } else null,
         ))
     }
 
@@ -206,6 +210,7 @@ class PomodoroEngine internal constructor(
         kind                   = TimerKind.values().firstOrNull { it.name == p[Keys.kind] } ?: TimerKind.Focus,
         categoryID             = p[Keys.categoryID],
         sessionID              = p[Keys.sessionID],
+        flowTaskLink           = p[Keys.flowTaskLink],
         endEpochMillis         = p[Keys.endEpoch],
         startedAtEpochMillis   = p[Keys.startedAt],
         pausedRemainingMillis  = p[Keys.pausedRemaining],

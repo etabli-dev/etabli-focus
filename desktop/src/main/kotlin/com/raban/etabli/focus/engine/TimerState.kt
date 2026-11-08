@@ -11,6 +11,7 @@ data class TimerState(
     val kind: TimerKind = TimerKind.Focus,
     val categoryID: String? = null,
     val sessionID: String? = null,
+    val flowTaskLink: String? = null,
     val endEpochMillis: Long? = null,
     val startedAtEpochMillis: Long? = null,
     val pausedRemainingMillis: Long? = null,

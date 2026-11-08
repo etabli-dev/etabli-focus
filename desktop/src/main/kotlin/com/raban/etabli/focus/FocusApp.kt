@@ -45,6 +45,19 @@ class FocusApp(val paths: AppPaths) : AutoCloseable {
         onFinished = { completions.trySend(it) },
     )
 
+    val flowSavvy = com.raban.etabli.focus.flowsavvy.FlowSavvy(
+        com.raban.etabli.focus.flowsavvy.DesktopKeyVault(profile = paths.root.toAbsolutePath().normalize().toString()),
+        com.raban.etabli.focus.flowsavvy.FileLedger(paths.root.resolve("flowsavvy-ledger.json")),
+        db.sessionDao().observeAll(), appScope,
+    )
+
+    val calendarNotifications = com.raban.etabli.focus.notifications.CalendarNotifications(appScope)
+    val calendar = com.raban.etabli.focus.calendar.CalendarService(
+        com.raban.etabli.focus.flowsavvy.DesktopKeyVault("caldav", profile = paths.root.toAbsolutePath().normalize().toString()), appScope,
+        calendarNotifications::schedule,
+            cancelReminders = calendarNotifications::cancelAll,
+    )
+
     val themeRepo = ThemeRepo(
         PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },

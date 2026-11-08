@@ -21,8 +21,7 @@ from the computer and for glancing at today's plan.
 | iOS | Companion: blocks away from the desk, today's plan, notifications at block end. |
 | Android | Companion with the same role as iOS; currently the most complete and most verified build. |
 
-Each installation keeps its own local history. There is no account, server or
-sync between devices, and none is planned in this roadmap.
+Each installation keeps its own local history. Optional FlowSavvy task-progress reporting and calendar reminders were added in November 2026; see [the integration guide](integrations-2026-11.md). This does not merge session-history databases across devices.
 
 ## 2. Current state
 

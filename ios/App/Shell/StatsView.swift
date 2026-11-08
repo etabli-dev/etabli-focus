@@ -86,7 +86,6 @@ struct StatsView: View {
                 ).frame(height: 220)
             } else {
                 Chart {
-                    let cal = Calendar.current
                     ForEach(groupedByDay(), id: \.day) { row in
                         ForEach(row.byCategory, id: \.categoryID) { c in
                             BarMark(

@@ -22,3 +22,7 @@ Historical screenshots from v0.1.0; these are not verification of the current re
 ![Categories — name, colour, and default focus/break lengths per category.](../_screens/0.1.0/04-categories.png){width=320}
 
 ![Settings — theme selection and app preferences.](../_screens/0.1.0/05-settings.png){width=320}
+
+## Task and calendar integrations
+
+Optional FlowSavvy integration links focus sessions to tasks, reports active minutes and requires confirmation before completing a task. Calendar reminders support system-synced calendars on iOS and direct read-only CalDAV on Android/desktop. See the [setup and verification guide](https://github.com/etabli-dev/etabli-focus/blob/main/docs/integrations-2026-11.md).

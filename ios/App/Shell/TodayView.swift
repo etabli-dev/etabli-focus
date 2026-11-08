@@ -14,6 +14,9 @@ struct TodayView: View {
     @Query private var templates: [TemplateEntry]
 
     @State private var showingTimer = false
+    @State private var showingFlowSavvy = false
+    @State private var showingCalendar = false
+    @Environment(CalendarAgenda.self) private var calendarAgenda
     @State private var selectedCategory: Category?
 
     private var todayWeekday: Int {
@@ -60,6 +63,8 @@ struct TodayView: View {
                 }
             }
             .navigationBarHidden(true)
+            .sheet(isPresented: $showingFlowSavvy) { FlowSavvyView() }
+            .sheet(isPresented: $showingCalendar) { CalendarAgendaView() }
             .sheet(isPresented: $showingTimer) {
                 if let cat = selectedCategory {
                     TimerSheet(category: cat)
@@ -77,6 +82,14 @@ struct TodayView: View {
     private var timerColumn: some View {
         VStack(alignment: .leading, spacing: Theme.Space.lg) {
             PromptHeader(["today", formattedDate()])
+            HStack {
+                Button("FlowSavvy tasks") { showingFlowSavvy = true }
+                Spacer()
+                Button("Calendar") { showingCalendar = true }
+            }
+            if calendarAgenda.authorized {
+                Card(title: "upcoming events", systemImage: "calendar") { CalendarEventRows(limit: 3) }
+            }
             Text(currentStateTitle)
                 .font(Theme.Font.display).foregroundStyle(Theme.Color.ink)
             Card(title: "now", systemImage: "play.circle") {
@@ -84,6 +97,7 @@ struct TodayView: View {
                     MonoLabel("Pick a category below to start a focus block.",
                               color: Theme.Color.faint)
                 } else {
+                    if let link = FlowTaskLink.decode(engine.state.flowSavvyLink) { Text(link.title).font(.headline) }
                     LiveTimerInline()
                         .environment(engine)
                 }

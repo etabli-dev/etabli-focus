@@ -291,4 +291,19 @@ class PomodoroEngineTest {
             db.close()
         }
     }
+    @Test fun taskAssociationSurvivesRestartAndOnlyFocusWritesIt() = install {
+        val link = "{\"id\":\"task-one\"}"
+        var engine = launch()
+        engine.start("category", TimerKind.Focus, 1, link).join()
+        quit()
+        engine = launch()
+        now += MINUTE
+        engine.restoreAlarm().join()
+        assertEquals("flowsavvy:v1:$link", history.single().note)
+        engine.start("category", TimerKind.ShortBreak, 1, link).join()
+        now += MINUTE
+        engine.tick().join()
+        assertNull(history.last().note)
+    }
+
 }

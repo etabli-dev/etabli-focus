@@ -13,6 +13,7 @@ public struct TimerState: Codable, Equatable {
     public var kind: Kind
     public var categoryID: UUID?
     public var sessionID: UUID?
+    public var flowSavvyLink: String? = nil
     /// `endDate` is the source of truth for time-remaining while running.
     /// `pausedRemainingSeconds` carries over the budget while paused.
     public var startedAt: Date? = nil

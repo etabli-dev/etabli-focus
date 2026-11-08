@@ -18,7 +18,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 Open Focus, choose a category, start a short block, pause/resume, and check Today and Stats after completion. Configure weekly targets under Template. Debug installs use a separate application ID. Release AABs remain unsigned until a private `keystore.properties` is supplied.
 
-For iOS, open `ios/EtabliFocus.xcodeproj` with Xcode on macOS, choose the EtabliFocus scheme and a simulator/device, and configure your own signing team for devices. This workspace has command-line Swift tools but no Xcode; the full iOS build is not locally verified.
+For iOS, open `ios/EtabliFocus.xcodeproj` with Xcode on macOS, choose the EtabliFocus scheme and a simulator/device, and configure your own signing team for devices. Unsigned simulator and device Release builds were verified locally with Xcode 27.2; installed device acceptance and signing remain separate.
 
 Desktop preview (Linux, Windows, macOS) prerequisites: a JDK 17 to 23 to run the Gradle 8.13 wrapper; the build provisions its JDK 17 toolchain if needed and bundles that runtime into the package. On Linux:
 
@@ -28,7 +28,7 @@ cd desktop
 ./gradlew packageDeb               # build/compose/binaries/main/deb/etabli-focus_0.1.0-1_amd64.deb
 ```
 
-`packageMsi` and `packageDmg` build the Windows and macOS packages on those systems. The desktop app adds a tray countdown (where the desktop environment offers a system tray) and completion notifications; closing the window while a block is active keeps it running in the tray. Desktop history is separate from the phone's; nothing is synchronised.
+`packageMsi` and `packageDmg` build the Windows and macOS packages on those systems. The desktop app adds a tray countdown (where the desktop environment offers a system tray) and completion notifications; closing the window while a block is active keeps it running in the tray. Desktop history remains separate from the phone's. Optional FlowSavvy integration reports task progress from each installation.
 
 Additional portable checks:
 
@@ -38,6 +38,15 @@ swiftc ios/App/TimerState.swift scripts/check_timer.swift -o /tmp/focus-timer-ch
 /tmp/focus-timer-check
 ```
 
+## Tasks and calendar reminders
+
+- **FlowSavvy:** open **Today → FlowSavvy tasks**, connect an API key from a FlowSavvy Pro account, choose a task/category and start a Pomodoro. Focus minutes sync automatically; marking a task complete always requires confirmation. Pauses and breaks do not count. Retry and pending work stay visible when the connection fails.
+- **iOS calendars:** open **Calendar**, allow system-calendar access and select calendars. CalDAV accounts are configured in iOS Settings and synced by the system.
+- **Android/desktop CalDAV:** open **Connect CalDAV calendar**, enter HTTPS calendar collection URLs (one per line for calendars sharing credentials), username and app password. The server must support CalDAV recurrence expansion.
+- Reminders default to five minutes before and at the start. All-day appointments remind at 09:00 local time. Allow system notifications and keep the desktop app running. Reopen mobile apps to refresh changed events; cached reminders can be outdated while offline. The timer continues until you pause it.
+
+Setup, retry behavior, privacy and testing limits are in [the integration guide](docs/integrations-2026-11.md).
+
 ## Availability
 
 Établi Focus is **under active development**. There are no App Store, Google Play or F-Droid releases yet.
@@ -46,13 +55,13 @@ swiftc ios/App/TimerState.swift scripts/check_timer.swift -o /tmp/focus-timer-ch
 - **App Store (iOS):** planned — not yet available.
 - **Google Play:** planned — not yet available.
 - **F-Droid:** planned — not yet available.
-- **Desktop (Linux .deb, Windows .msi, macOS .dmg):** **development preview**, built from source or downloaded as unsigned artifacts of the `Desktop build` GitHub Actions workflow. No signed desktop release yet; only the Linux build has been run locally.
+- **Desktop (Linux .deb, Windows .msi, macOS .dmg):** **development preview**, built from source or downloaded as unsigned artifacts of the `Desktop build` GitHub Actions workflow. No signed desktop release yet; see the current [integration verification record](docs/integrations-2026-11.md) for local build evidence.
 
 **Platforms:** what runs where, what is verified, and the steps to signed releases on Ubuntu/Debian, Windows, macOS, iOS and Android are in the [platform roadmap](docs/platform-roadmap.md).
 
 ## Privacy
 
-No accounts or analytics service. Categories, templates and session history stay in the local database; active timer state stays in platform preferences (on desktop, both live in one per-user data folder). Platform backups may include this data. The app uses the open-source platform libraries listed in its dependency manifests; it does not encrypt the history database.
+No analytics or required account. Categories, templates and session history stay in the local database; active timer state stays in platform preferences. Optional FlowSavvy integration sends recorded focus minutes and confirmed completion to FlowSavvy. Optional calendar access reads appointments from your configured CalDAV server (Android/desktop) or system calendar accounts (iOS); it never edits calendar entries. API keys and calendar credentials use Android Keystore or Apple Keychain; on Windows/Linux desktop they remain in memory until the app closes. Session history and task titles are not encrypted by the app. Sync receipts are device-local and excluded from mobile backups; restored history is not automatically replayed to FlowSavvy. The app uses the open-source platform libraries listed in its dependency manifests.
 
 ## Repository layout
 
@@ -60,6 +69,7 @@ No accounts or analytics service. Categories, templates and session history stay
 ios/        SwiftUI app
 android/    Kotlin + Jetpack Compose app
 desktop/    Kotlin + Compose Multiplatform desktop app (Linux, Windows, macOS)
+shared/     Android/desktop task-sync and CalDAV components
 fastlane/   F-Droid / store listing metadata
 ```
 

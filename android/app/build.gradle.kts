@@ -20,6 +20,7 @@ val keystoreProps = Properties().apply {
 
 android {
     namespace = "com.raban.etabli.focus"
+    sourceSets.getByName("main").java.srcDir("../../shared/src/main/kotlin")
     compileSdk = 36
 
     defaultConfig {
@@ -81,6 +82,8 @@ android {
 }
 
 dependencies {
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("net.sf.biweekly:biweekly:0.6.8")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.14.1")
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")

@@ -24,6 +24,13 @@ import com.raban.etabli.focus.ui.theme.Coder
 // Five tabs: Today / Template / Stats / Categories / Settings.
 @Composable
 fun RootScreen(app: EtabliFocusApplication, setTheme: (ThemePreference) -> Unit) {
+    val openCalendar by app.openCalendar.collectAsState()
+    if (openCalendar) {
+        Box(Modifier.fillMaxSize().systemBarsPadding()) {
+            com.raban.etabli.focus.calendar.CalendarPanel(app.calendar) { app.openCalendar.value = false }
+        }
+        return
+    }
     val t = Coder.tokens
     var tab by rememberSaveable { mutableIntStateOf(0) }
 

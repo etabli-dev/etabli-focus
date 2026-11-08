@@ -11,6 +11,7 @@
         Scheduling falls back to inexact if exact access is unavailable;
         notification consent is a separate runtime permission.
     -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
@@ -40,6 +41,8 @@
         <receiver
             android:name=".notifications.TimerCompletionReceiver"
             android:exported="false" />
+
+        <receiver android:name=".notifications.CalendarReminderReceiver" android:exported="false" />
 
         <receiver android:name=".notifications.TimerBootReceiver" android:exported="false">
             <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter>
