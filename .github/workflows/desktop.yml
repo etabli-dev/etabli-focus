@@ -1,0 +1,68 @@
+name: Desktop build
+on:
+  push:
+    branches: [main, 'refine/**']
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop.yml'
+  pull_request:
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  desktop:
+    name: desktop (${{ matrix.format }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            format: deb
+            task: packageDeb
+          - os: windows-latest
+            format: msi
+            task: packageMsi
+          - os: macos-15
+            format: dmg
+            task: packageDmg
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Install Debian packaging and virtual display tools
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fakeroot xvfb
+      - name: Unit tests
+        run: ./gradlew --no-daemon test
+      - name: Headless launch smoke test
+        if: runner.os == 'Linux'
+        env:
+          # Xvfb may lack OpenGL; render in software instead of logging a fallback.
+          SKIKO_RENDER_API: SOFTWARE
+        run: ./gradlew --no-daemon createDistributable && scripts/smoke-test.sh
+      - name: Package (${{ matrix.format }}, unsigned)
+        run: ./gradlew --no-daemon ${{ matrix.task }}
+      - name: Upload package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: etabli-focus-desktop-${{ matrix.format }}
+          path: desktop/build/compose/binaries/main/${{ matrix.format }}/
+          if-no-files-found: error
+      - name: Retain test reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-reports-${{ matrix.format }}
+          path: desktop/build/reports/
