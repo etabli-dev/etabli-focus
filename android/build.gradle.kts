@@ -1,5 +1,5 @@
 // Copyright 2026 R. Heller
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: LicenseRef-Proprietary
 
 // Top-level build file. Plugins are declared `apply false` so each
 // sub-module that actually uses them brings them in.
