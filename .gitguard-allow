@@ -1,0 +1,4 @@
+# Reviewed exceptions to the owner push guard (one glob per line).
+# "data" is an ordinary source-code package here (entities, DAOs, repositories); these are
+# source files, not raw data. Only source-file extensions are allowed (reviewed 2026-11-22).
+*/src/*/data/*.kt

@@ -1,8 +1,5 @@
 # Établi Focus — platform roadmap
 
-> **Note (22 November 2026):** this project is now proprietary (all rights reserved). F-Droid only
-> publishes free software, so every F-Droid step below is void.
-
 Status as of 2026-11-08. This document says what runs where today, what has
 been verified and how, and the ordered work that takes each platform to a
 signed, distributable release. Verification claims are deliberately narrow:

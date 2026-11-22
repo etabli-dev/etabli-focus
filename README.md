@@ -2,7 +2,7 @@
 
 > Track focused work blocks by category.
 
-`iOS` `Android` `Linux` `Windows` `macOS` (desktop preview) · All rights reserved · Part of the [Établi Suite](https://github.com/etabli-dev)
+`iOS` `Android` `Linux` `Windows` `macOS` (desktop preview) · AGPL-3.0-only · Part of the [Établi Suite](https://github.com/etabli-dev)
 
 Établi Focus records focused work by category, with weekly targets and local history. Android uses Compose, Room, DataStore and AlarmManager; iOS uses SwiftUI, SwiftData and local notifications; the desktop preview (Linux, Windows, macOS) uses Compose Multiplatform with SQLite and DataStore. Active deadlines and pause budgets persist across process restarts. Completion is reconciled when the application resumes; notification delivery depends on platform permissions and device power policies.
 
@@ -49,12 +49,12 @@ Setup, retry behavior, privacy and testing limits are in [the integration guide]
 
 ## Availability
 
-Établi Focus is **under active development**. There are no App Store or Google Play releases yet.
+Établi Focus is **under active development**. There are no App Store, Google Play or F-Droid releases yet.
 
 - **Android:** install the current **development build** as a signed **APK** from **[GitHub Releases](../../releases)**.
 - **App Store (iOS):** planned — not yet available.
 - **Google Play:** planned — not yet available.
-- **F-Droid:** not planned (F-Droid requires a free licence).
+- **F-Droid:** planned — not yet available.
 - **Desktop (Linux .deb, Windows .msi, macOS .dmg):** **development preview**, built from source or downloaded as unsigned artifacts of the `Desktop build` GitHub Actions workflow. No signed desktop release yet; see the current [integration verification record](docs/integrations-2026-11.md) for local build evidence.
 
 **Platforms:** what runs where, what is verified, and the steps to signed releases on Ubuntu/Debian, Windows, macOS, iOS and Android are in the [platform roadmap](docs/platform-roadmap.md).
@@ -83,11 +83,13 @@ iOS: SwiftUI + SwiftData. Android: Compose, Room, DataStore, AlarmManager. Deskt
 
 ## Support development
 
-- 💚 **[Liberapay](https://liberapay.com/rabanheller/)** — recurring, 0% commission.
+- 💚 **[Liberapay](https://liberapay.com/rabanheller/)** — recurring, 0% commission, to be shown on the F-Droid listing once published.
 
 ## License
 
-Proprietary, all rights reserved — see [LICENSE](LICENSE) and [NOTICE](NOTICE). Third-party components keep
-their own licences. Versions published before 22 November 2026 remain available under Apache-2.0.
+GNU Affero General Public License v3.0 only (AGPL-3.0-only) — see [LICENSE](LICENSE) and
+[NOTICE](NOTICE). Commercial licences are available from the copyright holder
+(etabli.dev@outlook.com). Third-party components keep their own licences. Versions published
+before 22 November 2026 remain available under Apache-2.0.
 
 Copyright 2026 R. Heller.

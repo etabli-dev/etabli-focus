@@ -1,5 +1,5 @@
 // Copyright 2026 R. Heller
-// SPDX-License-Identifier: LicenseRef-Proprietary
+// SPDX-License-Identifier: AGPL-3.0-only
 
 // Top-level build file. Plugins are declared `apply false` so each
 // sub-module that actually uses them brings them in.
