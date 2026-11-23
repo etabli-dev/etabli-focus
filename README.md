@@ -2,7 +2,7 @@
 
 > Track focused work blocks by category.
 
-`iOS` `Android` `Linux` `Windows` `macOS` (desktop preview) · Apache-2.0 · Part of the [Établi Suite](https://github.com/etabli-dev)
+`iOS` `Android` `Linux` `Windows` `macOS` (desktop preview) · AGPL-3.0-only · Part of the [Établi Suite](https://github.com/etabli-dev)
 
 Établi Focus records focused work by category, with weekly targets and local history. Android uses Compose, Room, DataStore and AlarmManager; iOS uses SwiftUI, SwiftData and local notifications; the desktop preview (Linux, Windows, macOS) uses Compose Multiplatform with SQLite and DataStore. Active deadlines and pause budgets persist across process restarts. Completion is reconciled when the application resumes; notification delivery depends on platform permissions and device power policies.
 
@@ -87,6 +87,9 @@ iOS: SwiftUI + SwiftData. Android: Compose, Room, DataStore, AlarmManager. Deskt
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+GNU Affero General Public License v3.0 only (AGPL-3.0-only) — see [LICENSE](LICENSE) and
+[NOTICE](NOTICE). Commercial licences are available from the copyright holder
+(etabli.dev@outlook.com). Third-party components keep their own licences. Versions published
+before 22 November 2026 remain available under Apache-2.0.
 
 Copyright 2026 R. Heller.
