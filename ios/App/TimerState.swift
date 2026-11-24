@@ -6,9 +6,9 @@ import Foundation
 // SwiftData on purpose: the timer must survive force-quit / background /
 // device restart and be reconstructable BEFORE the @Model container
 // finishes opening (otherwise an "almost done" session could lose seconds).
-public struct TimerState: Codable, Equatable {
-    public enum Kind: String, Codable { case focus, breakShort, breakLong }
-    public enum Phase: String, Codable { case running, paused, idle }
+public struct TimerState: Codable, Equatable, Sendable {
+    public enum Kind: String, Codable, Sendable { case focus, breakShort, breakLong }
+    public enum Phase: String, Codable, Sendable { case running, paused, idle }
     public var phase: Phase
     public var kind: Kind
     public var categoryID: UUID?

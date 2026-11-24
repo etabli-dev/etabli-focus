@@ -33,31 +33,30 @@ public final class Category {
         self.order = order
     }
 
-    /// The six built-in categories. Created once if the store is empty.
-    /// Colors are picked to be distinguishable while staying inside the
-    /// Coder palette — accent green for the highest-priority deep work,
-    /// muted variants for the rest.
-    public static let defaults: [Category] = [
-        Category(name: "Own paper · Data analysis",
+    /// The six built-in categories, as new objects on every call. Inserted
+    /// once if the store is empty. Colors are picked to be distinguishable;
+    /// they are the user's category data and do not follow the app accent.
+    public static var defaults: [Category] { [
+        Category(name: String(localized: "Own paper · Data analysis"),
                  colorHex: "28A745", defaultFocusMinutes: 50, defaultBreakMinutes: 10, order: 0),
-        Category(name: "Own paper · Manuscript writing",
+        Category(name: String(localized: "Own paper · Manuscript writing"),
                  colorHex: "1F6FEB", defaultFocusMinutes: 50, defaultBreakMinutes: 10, order: 1),
-        Category(name: "External review",
+        Category(name: String(localized: "External review"),
                  colorHex: "C9A35B", defaultFocusMinutes: 50, defaultBreakMinutes: 10, order: 2),
-        Category(name: "Internal review",
+        Category(name: String(localized: "Internal review"),
                  colorHex: "8957E5", defaultFocusMinutes: 50, defaultBreakMinutes: 10, order: 3),
-        Category(name: "Literature research & reading",
+        Category(name: String(localized: "Literature research & reading"),
                  colorHex: "1F9DA5", defaultFocusMinutes: 50, defaultBreakMinutes: 10, order: 4),
-        Category(name: "Organizational / admin",
+        Category(name: String(localized: "Organizational / admin"),
                  colorHex: "6B6B6B", defaultFocusMinutes: 25, defaultBreakMinutes: 5, order: 5),
-    ]
+    ] }
 }
 
 public extension Category {
-    /// Hex → SwiftUI.Color. Falls back to the accent if the stored value
-    /// is malformed (shouldn't happen but defensive).
+    /// Hex → SwiftUI.Color. Falls back to the user's accent if the stored
+    /// value is malformed (shouldn't happen but defensive).
     var color: Color {
-        guard let v = UInt32(colorHex, radix: 16) else { return Theme.Color.accent }
+        guard let v = UInt32(colorHex, radix: 16) else { return Theme.Color.storedAccent }
         let r = Double((v >> 16) & 0xFF) / 255.0
         let g = Double((v >>  8) & 0xFF) / 255.0
         let b = Double( v        & 0xFF) / 255.0

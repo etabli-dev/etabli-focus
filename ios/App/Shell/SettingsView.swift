@@ -4,14 +4,11 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @AppStorage(ThemePreference.userDefaultsKey) private var themeRaw: String = ThemePreference.system.rawValue
     @AppStorage("scholarfocus.longBreak.afterN") private var longBreakAfter: Int = 4
     @AppStorage("scholarfocus.longBreak.minutes") private var longBreakMinutes: Int = 20
 
     @State private var showingFlowSavvy = false
     @State private var showingCalendar = false
-
-    private var theme: ThemePreference { ThemePreference(rawValue: themeRaw) ?? .system }
 
     var body: some View {
         NavigationStack {
@@ -24,31 +21,15 @@ struct SettingsView: View {
                             .font(Theme.Font.display).foregroundStyle(Theme.Color.ink)
                         Button("Connect FlowSavvy") { showingFlowSavvy = true }
                         Button("Calendar accounts and reminders") { showingCalendar = true }
-                        themeCard
+                        AppearanceCard()
                         breakCard
                         aboutCard
-                    }.padding(Theme.Space.lg)
+                    }.padding(Theme.Space.lg).readableColumn()
                 }
             }
             .navigationBarHidden(true)
             .sheet(isPresented: $showingFlowSavvy) { FlowSavvyView() }
             .sheet(isPresented: $showingCalendar) { CalendarAgendaView() }
-        }
-    }
-
-    private var themeCard: some View {
-        Card(title: "appearance", systemImage: "paintbrush") {
-            VStack(alignment: .leading, spacing: Theme.Space.sm) {
-                Picker("Theme", selection: Binding(
-                    get: { theme }, set: { themeRaw = $0.rawValue }
-                )) {
-                    ForEach(ThemePreference.allCases) { p in
-                        Label(p.label, systemImage: p.systemImage).tag(p)
-                    }
-                }.pickerStyle(.segmented)
-                MonoLabel("Auto follows the system Light / Dark setting.",
-                          color: Theme.Color.faint)
-            }
         }
     }
 

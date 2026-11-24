@@ -9,6 +9,7 @@ struct CategoriesView: View {
     @Query(sort: \Category.order) private var categories: [Category]
     @State private var editing: Category?
     @State private var creating = false
+    @Environment(\.themeAccent) private var accent
 
     var body: some View {
         NavigationStack {
@@ -18,8 +19,9 @@ struct CategoriesView: View {
                     VStack(alignment: .leading, spacing: Theme.Space.lg) {
                         PromptHeader(["categories"]) {
                             Button { creating = true } label: {
-                                Image(systemName: "plus.circle").foregroundStyle(Theme.Color.accent)
+                                Image(systemName: "plus.circle").foregroundStyle(accent)
                             }.buttonStyle(.plain)
+                            .accessibilityLabel("New category")
                         }
                         Text("Categories")
                             .font(Theme.Font.display).foregroundStyle(Theme.Color.ink)
@@ -31,7 +33,7 @@ struct CategoriesView: View {
                                     Button { editing = cat } label: {
                                         ListRow(
                                             title: cat.name,
-                                            metadata: "\(cat.defaultFocusMinutes) min focus · #\(cat.colorHex)",
+                                            metadata: String(localized: "\(cat.defaultFocusMinutes) min focus · #\(cat.colorHex)"),
                                             leading: { Circle().fill(cat.color).frame(width: 12, height: 12) },
                                             trailing: {
                                                 Image(systemName: "chevron.right")
@@ -45,7 +47,7 @@ struct CategoriesView: View {
                                 }
                             }
                         }
-                    }.padding(Theme.Space.lg)
+                    }.padding(Theme.Space.lg).readableColumn()
                 }
             }
             .navigationBarHidden(true)
@@ -100,7 +102,10 @@ private struct CategoryEditSheet: View {
                                             .overlay(Circle()
                                                 .strokeBorder(colorHex == hex ? Theme.Color.ink : Theme.Color.hairline,
                                                               lineWidth: colorHex == hex ? 2 : 1))
+                                            .frame(minWidth: 44, minHeight: 44)
                                     }.buttonStyle(.plain)
+                                    .accessibilityLabel("Colour #\(hex)")
+                                    .accessibilityAddTraits(colorHex == hex ? .isSelected : [])
                                 }
                             }
                         }
@@ -121,7 +126,7 @@ private struct CategoryEditSheet: View {
                             }
                         }
                         actionRow
-                    }.padding(Theme.Space.lg)
+                    }.padding(Theme.Space.lg).readableColumn()
                 }
             }
             .toolbar {
@@ -150,7 +155,7 @@ private struct CategoryEditSheet: View {
                 } label: {
                     Text("Delete").font(Theme.Font.body.weight(.semibold))
                         .padding(.horizontal, Theme.Space.md).padding(.vertical, Theme.Space.sm)
-                        .foregroundStyle(Theme.Color.surface)
+                        .foregroundStyle(Theme.Color.onAccent)
                         .background(Theme.Color.danger)
                         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.sm))
                 }.buttonStyle(.plain)
@@ -174,7 +179,7 @@ private struct CategoryEditSheet: View {
     }
 
     private func colorFromHex(_ hex: String) -> Color {
-        guard let v = UInt32(hex, radix: 16) else { return Theme.Color.accent }
+        guard let v = UInt32(hex, radix: 16) else { return Theme.Color.storedAccent }
         return Color(red: Double((v >> 16) & 0xFF)/255,
                      green: Double((v >> 8) & 0xFF)/255,
                      blue: Double(v & 0xFF)/255)

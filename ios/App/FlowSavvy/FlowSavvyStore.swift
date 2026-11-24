@@ -15,7 +15,7 @@ struct FlowKeychain {
         let status = SecItemCopyMatching(query as CFDictionary, &value)
         if status == errSecItemNotFound { return nil }
         guard status == errSecSuccess, let data = value as? Data else {
-            throw FlowSavvyError(message: "Could not read the API key from Keychain. Unlock your device and retry.")
+            throw FlowSavvyError(message: String(localized: "Could not read the API key from Keychain. Unlock your device and retry."))
         }
         return String(data: data, encoding: .utf8)
     }
@@ -25,7 +25,7 @@ struct FlowKeychain {
         guard let key else {
             let status = SecItemDelete(query as CFDictionary)
             guard status == errSecSuccess || status == errSecItemNotFound else {
-                throw FlowSavvyError(message: "Could not remove the saved API key.")
+                throw FlowSavvyError(message: String(localized: "Could not remove the saved API key."))
             }
             return
         }
@@ -35,7 +35,7 @@ struct FlowKeychain {
         if status == errSecItemNotFound {
             status = SecItemAdd(query.merging(attributes) { _, new in new } as CFDictionary, nil)
         }
-        guard status == errSecSuccess else { throw FlowSavvyError(message: "Could not securely save the API key.") }
+        guard status == errSecSuccess else { throw FlowSavvyError(message: String(localized: "Could not securely save the API key.")) }
     }
 }
 
@@ -71,14 +71,14 @@ final class FlowSavvyStore {
             }
             key = try FlowKeychain.read(); connected = key != nil
         } catch {
-            message = "Could not load the saved FlowSavvy connection or sync history. Sync is paused to protect recorded work."
+            message = String(localized: "Could not load the saved FlowSavvy connection or sync history. Sync is paused to protect recorded work.")
         }
     }
     func connect(_ enteredKey: String) async {
         guard !busy, synchronizer != nil else { return }
         let proposed = enteredKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !proposed.isEmpty, !proposed.contains("\n"), !proposed.contains("\r") else {
-            message = "Enter your FlowSavvy API key."; return
+            message = String(localized: "Enter your FlowSavvy API key."); return
         }
         busy = true; defer { busy = false }
         do {
@@ -91,7 +91,7 @@ final class FlowSavvyStore {
         guard !busy else { return }
         do {
             try FlowKeychain.write(nil); key = nil; connected = false; tasks = []
-            message = "Disconnected. Saved work remains on this device."
+            message = String(localized: "Disconnected. Saved work remains on this device.")
         } catch { message = error.localizedDescription }
     }
     func refresh() async {
@@ -112,14 +112,14 @@ final class FlowSavvyStore {
     func complete(_ task: FlowTask, work: [FlowWorkRecord]) async {
         guard !busy, let key, let synchronizer else { return }
         guard task.link.credentialID == FlowTaskLink.credentialID(key) else {
-            message = "Reconnect the API key used to load this task."; return
+            message = String(localized: "Reconnect the API key used to load this task."); return
         }
         records = work; busy = true; defer { busy = false; updatePending() }
         do {
             try await synchronizer.synchronize(work, key: key)
             try await client.complete(task.link, key: key)
             tasks.removeAll { $0.id == task.id }
-            message = "Task marked complete in FlowSavvy."; lastSynced = Date()
+            message = String(localized: "Task marked complete in FlowSavvy."); lastSynced = Date()
         } catch { message = error.localizedDescription }
     }
     private func updatePending() {

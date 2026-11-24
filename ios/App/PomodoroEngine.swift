@@ -60,6 +60,8 @@ public final class PomodoroEngine {
         state = s
         persist()
         scheduleNotification(at: s.endDate!, kind: kind)
+        // Ask for notification permission when it is first needed, not at launch.
+        Task { await Self.requestAuthorization() }
     }
 
     public func pause() {
@@ -139,7 +141,7 @@ public final class PomodoroEngine {
             lastError = nil
             return true
         } catch {
-            lastError = "Could not save the session. The timer is retained; please retry."
+            lastError = String(localized: "Could not save the session. The timer is retained; please retry.")
             return false
         }
     }
@@ -164,10 +166,10 @@ public final class PomodoroEngine {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: [notificationID])
         let content = UNMutableNotificationContent()
-        content.title = kind == .focus ? "Focus block complete" : "Break complete"
+        content.title = kind == .focus ? String(localized: "Focus block complete") : String(localized: "Break complete")
         content.body  = kind == .focus
-            ? "Suggest a short break — or start the next block."
-            : "Time to get back to it when you're ready."
+            ? String(localized: "Suggest a short break — or start the next block.")
+            : String(localized: "Time to get back to it when you're ready.")
         content.sound = .default
         let interval = max(1, date.timeIntervalSinceNow)
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)

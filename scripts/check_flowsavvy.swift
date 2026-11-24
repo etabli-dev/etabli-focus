@@ -31,6 +31,11 @@ final class FakeFlowServer {
     }
 }
 
+actor PageCounter {
+    private(set) var count = 0
+    func next() -> Int { count += 1; return count }
+}
+
 @main struct FlowSavvyChecks {
     @MainActor static func main() async throws {
         var checks = 0
@@ -94,20 +99,20 @@ final class FakeFlowServer {
         do { try await completed.synchronize([record], key: key); fatalError("Expected completed task guard") }
         catch is FlowSavvyError { }
         assert(server.putCount == 3); checks += 1
-        var pages = 0
+        let pages = PageCounter()
         let listing = FlowSavvyClient { request in
             var result: [String: FlowJSON]
             if request.url!.path == "/api/schedule" {
                 result = ["scheduleItems": .array([.object(["itemId": .string("repeating"), "itemType": .string("task"), "occurrenceDate": .string("2026-11-08"), "startTime": .string("2026-11-08T13:00:00")]), .object(["itemId": .string("repeating"), "itemType": .string("task"), "occurrenceDate": .string("2026-11-08"), "startTime": .string("2026-11-08T14:00:00")])])]
             } else {
-                pages += 1
-                if pages == 1 { result = ["nextPageToken": .string("page2"), "items": .array([.object(["id": .string("repeating"), "recurrenceRule": .string("FREQ=DAILY"), "title": .string("Scheduled")])])] }
+                if await pages.next() == 1 { result = ["nextPageToken": .string("page2"), "items": .array([.object(["id": .string("repeating"), "recurrenceRule": .string("FREQ=DAILY"), "title": .string("Scheduled")])])] }
                 else { result = ["items": .array([.object(["id": .string("single"), "title": .string("Unscheduled")])])] }
             }
             return (try JSONEncoder().encode(FlowJSON.object(result)), 200)
         }
         let tasks = try await listing.tasks(key: key, installationID: installationID)
-        assert(pages == 2 && tasks.count == 2 && tasks[0].link.occurrenceDate == "2026-11-08" && tasks[1].link.taskID == "single"); checks += 1
+        let pageCount = await pages.count
+        assert(pageCount == 2 && tasks.count == 2 && tasks[0].link.occurrenceDate == "2026-11-08" && tasks[1].link.taskID == "single"); checks += 1
         try await client.complete(link, key: key)
         assert(server.completeCount == 1); checks += 1
         let oldState = "{\"phase\":\"idle\",\"kind\":\"focus\",\"totalSeconds\":0,\"blocksCompletedInSet\":0}"

@@ -50,7 +50,7 @@ final class CalendarAgenda {
                 _ = try await center.requestAuthorization(options: [.alert, .sound])
             }
             await refresh()
-        } catch { message = "Calendar access could not be requested. You can enable it in Settings." }
+        } catch { message = String(localized: "Calendar access could not be requested. You can enable it in Settings.") }
     }
     private func scheduleRefresh() { Task { await refresh() } }
     func refresh() async {
@@ -65,7 +65,7 @@ final class CalendarAgenda {
             calendars = []; appointments = []; signature = ""
             await removeReminders()
             let status = EKEventStore.authorizationStatus(for: .event)
-            message = status == .notDetermined ? nil : "Calendar access is off. Enable Full Access for Établi Focus in Settings."
+            message = status == .notDetermined ? nil : String(localized: "Calendar access is off. Enable Full Access for Établi Focus in Settings.")
             return
         }
         calendars = store.calendars(for: .event).sorted { $0.title < $1.title }
@@ -75,13 +75,13 @@ final class CalendarAgenda {
         let events = selected.isEmpty ? [] : store.events(matching: store.predicateForEvents(withStart: Calendar.current.startOfDay(for: now), end: end, calendars: selected))
         appointments = events.filter { $0.endDate > now && $0.status != .canceled }.map {
             CalendarAppointment(id: "\($0.calendarItemIdentifier)|\($0.startDate.timeIntervalSince1970)",
-                                title: $0.title?.isEmpty == false ? $0.title! : "Untitled event",
+                                title: $0.title?.isEmpty == false ? $0.title! : String(localized: "Untitled event"),
                                 calendarTitle: $0.calendar.title, start: $0.startDate, end: $0.endDate, allDay: $0.isAllDay)
         }.sorted { $0.start < $1.start }
         message = nil
         let permissions = await UNUserNotificationCenter.current().notificationSettings()
         if remindersEnabled && permissions.authorizationStatus != .authorized && permissions.authorizationStatus != .provisional {
-            message = "Calendar events are visible, but notifications are disabled. Enable notifications in Settings to receive reminders."
+            message = String(localized: "Calendar events are visible, but notifications are disabled. Enable notifications in Settings to receive reminders.")
         }
         let plan = CalendarReminderPlan.make(events: appointments, now: now, leadMinutes: leadMinutes)
         let newSignature = "\(selectedIDs.sorted())|\(leadMinutes)|\(remindersEnabled)|\(permissions.authorizationStatus.rawValue)|" + appointments.map { "\($0.id)|\($0.title)|\($0.calendarTitle)|\($0.end.timeIntervalSince1970)" }.joined(separator: ";") + "|\(plan.map(\.id))|\(TimeZone.current.identifier)"
@@ -105,7 +105,9 @@ final class CalendarAgenda {
                 let content = UNMutableNotificationContent()
                 content.title = event.title
                 let time = event.start.formatted(date: .omitted, time: .shortened)
-                content.body = event.allDay ? "All day · \(event.calendarTitle)" : reminder.leadMinutes == 0 ? "Starts now · \(event.calendarTitle)" : "Starts at \(time) · in \(reminder.leadMinutes) minutes"
+                content.body = event.allDay ? String(localized: "All day · \(event.calendarTitle)")
+                    : reminder.leadMinutes == 0 ? String(localized: "Starts now · \(event.calendarTitle)")
+                    : String(localized: "Starts at \(time) · in \(reminder.leadMinutes) minutes")
                 content.sound = .default
                 content.userInfo = ["calendarStart": event.start.timeIntervalSinceReferenceDate,
                                     "calendarFire": reminder.fire.timeIntervalSince1970,
@@ -114,7 +116,7 @@ final class CalendarAgenda {
                 try await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: reminder.id, content: content, trigger: trigger))
             }
             signature = newSignature
-        } catch { message = "Some calendar reminders could not be scheduled. Open the app to retry." }
+        } catch { message = String(localized: "Some calendar reminders could not be scheduled. Open the app to retry.") }
     }
     private func removeReminders() async {
         let center = UNUserNotificationCenter.current()
@@ -124,7 +126,7 @@ final class CalendarAgenda {
 }
 
 /// Calendar reminders must remain visible when the timer is in the foreground.
-final class FocusNotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+final class FocusNotificationDelegate: NSObject, UNUserNotificationCenterDelegate, Sendable {
     static let shared = FocusNotificationDelegate()
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         [.banner, .sound, .list]

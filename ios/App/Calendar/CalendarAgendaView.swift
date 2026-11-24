@@ -53,7 +53,11 @@ struct CalendarEventRows: View {
             Link(destination: URL(string: "calshow:\(event.start.timeIntervalSinceReferenceDate)")!) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(event.title).font(.headline)
-                    Text(event.allDay ? "All day · \(event.start.formatted(date: .abbreviated, time: .omitted))" : event.start.formatted(date: .abbreviated, time: .shortened))
+                    if event.allDay {
+                        Text("All day · \(event.start.formatted(date: .abbreviated, time: .omitted))")
+                    } else {
+                        Text(event.start.formatted(date: .abbreviated, time: .shortened))
+                    }
                     Text(event.calendarTitle).font(.caption).foregroundStyle(.secondary)
                 }
             }

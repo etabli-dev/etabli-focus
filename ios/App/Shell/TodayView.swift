@@ -8,6 +8,7 @@ struct TodayView: View {
     @Environment(\.modelContext) private var context
     @Environment(PomodoroEngine.self) private var engine
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.themeAccent) private var accent
 
     @Query(sort: \Category.order) private var categories: [Category]
     @Query private var sessions: [Session]
@@ -131,7 +132,7 @@ struct TodayView: View {
                         } label: {
                             ListRow(
                                 title: cat.name,
-                                metadata: "\(cat.defaultFocusMinutes) min focus · \(cat.defaultBreakMinutes) min break",
+                                metadata: String(localized: "\(cat.defaultFocusMinutes) min focus · \(cat.defaultBreakMinutes) min break"),
                                 leading: { Circle().fill(cat.color).frame(width: 12, height: 12) },
                                 trailing: {
                                     Image(systemName: "chevron.right")
@@ -162,11 +163,11 @@ struct TodayView: View {
             Spacer()
             MonoLabel("\(row.completed) / \(row.target)",
                       color: row.completed >= row.target && row.target > 0
-                             ? Theme.Color.accent : Theme.Color.faint)
+                             ? accent : Theme.Color.faint)
         }
     }
 
-    private var currentStateTitle: String {
+    private var currentStateTitle: LocalizedStringKey {
         switch engine.state.phase {
         case .idle:    "Ready"
         case .running: "Focusing"
@@ -186,6 +187,7 @@ struct TodayView: View {
 private struct LiveTimerInline: View {
     @Environment(\.modelContext) private var context
     @Environment(PomodoroEngine.self) private var engine
+    @Environment(\.themeAccent) private var accent
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { _ in
@@ -194,7 +196,7 @@ private struct LiveTimerInline: View {
                     Circle().stroke(Theme.Color.hairline, lineWidth: 6)
                     Circle()
                         .trim(from: 0, to: engine.progress)
-                        .stroke(Theme.Color.accent,
+                        .stroke(accent,
                                 style: StrokeStyle(lineWidth: 6, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                     VStack {
@@ -277,7 +279,7 @@ private struct TimerSheet: View {
                         dismiss()
                     }
                     Spacer()
-                }.padding(Theme.Space.lg)
+                }.padding(Theme.Space.lg).readableColumn()
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

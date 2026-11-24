@@ -6,6 +6,8 @@
 
 Établi Focus records focused work by category, with weekly targets and local history. Android uses Compose, Room, DataStore and AlarmManager; iOS uses SwiftUI, SwiftData and local notifications; the desktop preview (Linux, Windows, macOS) uses Compose Multiplatform with SQLite and DataStore. Active deadlines and pause budgets persist across process restarts. Completion is reconciled when the application resumes; notification delivery depends on platform permissions and device power policies.
 
+Appearance (iOS, Settings → Appearance): app language (System/Deutsch/English; the iOS app is fully translated into German), System/Light/Dark and accent colour; default Hugo Coder palette.
+
 ## Build and first use
 
 Android prerequisites: JDK 17, Android SDK platform 36 and build-tools 35.0.0. Set `JAVA_HOME` and `ANDROID_HOME`, then:
@@ -36,6 +38,8 @@ Additional portable checks:
 python3 scripts/check_migration.py
 swiftc ios/App/TimerState.swift scripts/check_timer.swift -o /tmp/focus-timer-check
 /tmp/focus-timer-check
+swiftc ios/App/AppearanceModel.swift scripts/check_appearance.swift -o /tmp/focus-appearance-check
+/tmp/focus-appearance-check
 ```
 
 ## Tasks and calendar reminders

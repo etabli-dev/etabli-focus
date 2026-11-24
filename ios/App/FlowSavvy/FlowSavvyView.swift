@@ -62,8 +62,10 @@ struct FlowSavvyView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(task.title).font(.headline)
                                 if let scheduled = task.scheduledStart { Text(scheduled.replacingOccurrences(of: "T", with: " · ")).font(.caption) }
-                                if let progress = task.progressMinutes {
-                                    Text("\(progress) min recorded" + (task.durationMinutes.map { " / \($0) min planned" } ?? "")).font(.caption)
+                                if let progress = task.progressMinutes, let planned = task.durationMinutes {
+                                    Text("\(progress) min recorded / \(planned) min planned").font(.caption)
+                                } else if let progress = task.progressMinutes {
+                                    Text("\(progress) min recorded").font(.caption)
                                 } else { Text("Recurring task · selected occurrence").font(.caption) }
                                 HStack {
                                     Button("Start Pomodoro") {

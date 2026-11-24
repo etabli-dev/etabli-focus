@@ -8,9 +8,14 @@ import Charts
 struct StatsView: View {
     @Query(sort: \Category.order) private var categories: [Category]
     @Query private var sessions: [Session]
+    @Environment(\.themeAccent) private var accent
 
     @State private var window: Window = .week
-    enum Window: String, CaseIterable, Identifiable { case week, month; var id: String { rawValue } }
+    enum Window: String, CaseIterable, Identifiable {
+        case week, month
+        var id: String { rawValue }
+        var label: LocalizedStringKey { self == .week ? "Week" : "Month" }
+    }
 
     private var windowStart: Date {
         let cal = Calendar.current
@@ -40,12 +45,12 @@ struct StatsView: View {
                         Text("Focus stats")
                             .font(Theme.Font.display).foregroundStyle(Theme.Color.ink)
                         Picker("Window", selection: $window) {
-                            ForEach(Window.allCases) { Text($0.rawValue.capitalized).tag($0) }
+                            ForEach(Window.allCases) { Text($0.label).tag($0) }
                         }.pickerStyle(.segmented)
                         totalsCard
                         chartCard
                         breakdownCard
-                    }.padding(Theme.Space.lg)
+                    }.padding(Theme.Space.lg).readableColumn()
                 }
             }
             .navigationBarHidden(true)
@@ -69,10 +74,10 @@ struct StatsView: View {
         }
     }
 
-    private func bigNumber(_ label: String, _ value: String) -> some View {
+    private func bigNumber(_ label: LocalizedStringKey, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             MonoLabel(label, color: Theme.Color.faint)
-            Text(value).font(Theme.Font.display).foregroundStyle(Theme.Color.accent)
+            Text(value).font(Theme.Font.display).foregroundStyle(accent)
         }
     }
 
@@ -160,6 +165,6 @@ struct StatsView: View {
         Dictionary(grouping: completedFocus, by: \.categoryID).mapValues(\.count)
     }
     private func color(for id: UUID) -> Color {
-        categories.first { $0.id == id }?.color ?? Theme.Color.accent
+        categories.first { $0.id == id }?.color ?? accent
     }
 }

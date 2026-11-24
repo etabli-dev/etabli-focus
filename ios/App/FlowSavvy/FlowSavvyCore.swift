@@ -102,8 +102,8 @@ private enum FlowHTTPS {
     }()
 }
 
-struct FlowSavvyClient {
-    typealias Transport = (URLRequest) async throws -> (Data, Int)
+struct FlowSavvyClient: Sendable {
+    typealias Transport = @Sendable (URLRequest) async throws -> (Data, Int)
     let transport: Transport
     init(transport: @escaping Transport = { request in
         let (data, response) = try await FlowHTTPS.session.data(for: request)
@@ -115,7 +115,7 @@ struct FlowSavvyClient {
         var components = URLComponents(string: "https://my.flowsavvy.app")!
         components.path = path
         if !query.isEmpty { components.queryItems = query }
-        guard let url = components.url else { throw FlowSavvyError(message: "Invalid task address.") }
+        guard let url = components.url else { throw FlowSavvyError(message: String(localized: "Invalid task address.")) }
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.timeoutInterval = 30
@@ -129,10 +129,10 @@ struct FlowSavvyClient {
         guard (200..<300).contains(status) else {
             let explanation: String
             switch status {
-            case 401, 403: explanation = "Check your FlowSavvy API key and Pro subscription."
-            case 404: explanation = "The FlowSavvy task is no longer available."
-            case 429: explanation = "FlowSavvy is busy. Your work is saved; retry later."
-            default: explanation = "FlowSavvy could not sync (HTTP \(status)). Your work is saved."
+            case 401, 403: explanation = String(localized: "Check your FlowSavvy API key and Pro subscription.")
+            case 404: explanation = String(localized: "The FlowSavvy task is no longer available.")
+            case 429: explanation = String(localized: "FlowSavvy is busy. Your work is saved; retry later.")
+            default: explanation = String(localized: "FlowSavvy could not sync (HTTP \(status)). Your work is saved.")
             }
             throw FlowSavvyError(message: explanation)
         }
@@ -170,7 +170,7 @@ struct FlowSavvyClient {
             let result = try await request("GET", "/api/items", key: key, query: query)
             items += (result["items"]?.array ?? []).map(\.object)
             token = result["nextPageToken"]?.string
-            if let token, !seen.insert(token).inserted { throw FlowSavvyError(message: "FlowSavvy returned a repeated page. Please retry.") }
+            if let token, !seen.insert(token).inserted { throw FlowSavvyError(message: String(localized: "FlowSavvy returned a repeated page. Please retry.")) }
         } while token != nil
         let format = DateFormatter(); format.calendar = Calendar(identifier: .gregorian)
         format.locale = Locale(identifier: "en_US_POSIX"); format.dateFormat = "yyyy-MM-dd"
@@ -228,23 +228,23 @@ final class FlowSynchronizer {
             var receipt = ledger.receipts[id] ?? FlowReceipt()
             let deltaMinutes = Int(total / 60) - Int(receipt.acknowledgedSeconds / 60)
             guard deltaMinutes > 0 || receipt.intent != nil else { continue }
-            guard link.installationID == ledger.installationID else { throw FlowSavvyError(message: "Saved work was restored without its original sync history. Automatic reporting is paused to avoid counting it twice. Restore the original sync history or review the work in FlowSavvy.") }
-            guard link.credentialID == binding else { throw FlowSavvyError(message: "Saved work belongs to a different API key. Reconnect the original key before syncing it.") }
+            guard link.installationID == ledger.installationID else { throw FlowSavvyError(message: String(localized: "Saved work was restored without its original sync history. Automatic reporting is paused to avoid counting it twice. Restore the original sync history or review the work in FlowSavvy.")) }
+            guard link.credentialID == binding else { throw FlowSavvyError(message: String(localized: "Saved work belongs to a different API key. Reconnect the original key before syncing it.")) }
             repeat {
                 var task = try await client.get(link, key: key)
-                guard task["itemType"]?.string == "task" else { throw FlowSavvyError(message: "The selected item is no longer a task.") }
+                guard task["itemType"]?.string == "task" else { throw FlowSavvyError(message: String(localized: "The selected item is no longer a task.")) }
                 var current = task["progressMinutes"]?.int ?? 0
                 if let pending = receipt.intent {
                     if current == pending.target {
                         receipt.acknowledgedSeconds = pending.totalSeconds; receipt.intent = nil
                         try commit(receipt, id: id)
                     } else if current != pending.baseline {
-                        throw FlowSavvyError(message: "Progress changed in FlowSavvy during a pending sync. Your local work is retained; review the task before retrying.")
+                        throw FlowSavvyError(message: String(localized: "Progress changed in FlowSavvy during a pending sync. Your local work is retained; review the task before retrying."))
                     }
                 }
                 let remaining = Int(total / 60) - Int(receipt.acknowledgedSeconds / 60)
                 if receipt.intent == nil && remaining > 0 {
-                    guard task["completed"]?.bool != true else { throw FlowSavvyError(message: "This task was completed elsewhere. Its unsynced work remains saved here.") }
+                    guard task["completed"]?.bool != true else { throw FlowSavvyError(message: String(localized: "This task was completed elsewhere. Its unsynced work remains saved here.")) }
                     // Refetch after reconciling an earlier intent so other task fields stay current.
                     task = try await client.get(link, key: key)
                     current = task["progressMinutes"]?.int ?? 0
@@ -252,7 +252,7 @@ final class FlowSynchronizer {
                     try commit(receipt, id: id)
                 }
                 if let pending = receipt.intent {
-                    guard task["completed"]?.bool != true else { throw FlowSavvyError(message: "The task is completed; saved work needs review.") }
+                    guard task["completed"]?.bool != true else { throw FlowSavvyError(message: String(localized: "The task is completed; saved work needs review.")) }
                     try await client.put(link, key: key, body: FlowSavvyClient.replacingProgress(in: task, with: pending.target))
                     receipt.acknowledgedSeconds = pending.totalSeconds; receipt.intent = nil
                     try commit(receipt, id: id)
