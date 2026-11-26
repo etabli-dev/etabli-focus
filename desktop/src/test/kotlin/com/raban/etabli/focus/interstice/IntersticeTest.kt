@@ -29,7 +29,9 @@ class IntersticeTest {
         var complete = false
         var loseResponse = false
         var mode = "test"
+        var offline = false
         override suspend fun request(connection: IntersticeConnection, method: String, path: String, body: JSONObject?, headers: Map<String,String>): JSONObject {
+            check(!offline) { "Offline" }
             calls += "$method $path"
             if (path.endsWith("/status")) return JSONObject().put("role","admin").put("mode",mode)
             if (path.endsWith("/schedule")) return JSONObject().put("blocks",JSONArray()).put("calendar_inputs_ready",true)
@@ -44,11 +46,11 @@ class IntersticeTest {
             return result
         }
     }
-    class Fixture : AutoCloseable {
+    class Fixture(retryMillis: Long = 60_000) : AutoCloseable {
         val scope = CoroutineScope(SupervisorJob()+Dispatchers.Unconfined)
         val history = MutableStateFlow<List<SessionEntity>>(emptyList())
         val ledger=Ledger();val vault=Vault();val remote=Remote()
-        val service=Interstice(vault,ledger,history,scope,remote)
+        val service=Interstice(vault,ledger,history,scope,remote,retryMillis)
         suspend fun connect() { service.connect("https://tasks.example/workspace","test-key").join() }
         fun row(id:String,millis:Long) = SessionEntity(id,"category",0,millis,millis,false,"focus",
             Interstice.PREFIX+FlowTask("one","Task",provider="interstice").link(service.binding()!!),millis)
@@ -99,5 +101,16 @@ class IntersticeTest {
         }
         assertTrue(taskSessionNote(FlowTask("one","Task",provider="interstice").link("binding")).startsWith(Interstice.PREFIX))
         assertTrue(taskSessionNote("legacy").startsWith(FlowSavvy.NOTE_PREFIX))
+    }
+    @Test fun reconnectRetriesWithoutAHistoryChangeOrManualRefresh() = runBlocking {
+        Fixture(20).use { f ->
+            f.connect();f.remote.offline=true
+            f.history.value=listOf(f.row("offline-session",60000));yield()
+            assertEquals(0L,f.remote.progress)
+            f.remote.offline=false
+            withTimeout(2000) { while(f.remote.progress==0L) delay(10) }
+            assertEquals(1L,f.remote.progress)
+            assertEquals(1,f.remote.receipts.size)
+        }
     }
 }

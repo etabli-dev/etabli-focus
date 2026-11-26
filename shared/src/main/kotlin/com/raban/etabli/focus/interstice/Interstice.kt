@@ -64,7 +64,8 @@ class IntersticeHttp : IntersticeTransport {
 /** Separate provider binding and cumulative per-session receipts prevent history replay. */
 class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerStore,
                  private val sessions: Flow<List<SessionEntity>>, private val scope: CoroutineScope,
-                 private val transport: IntersticeTransport = IntersticeHttp()) {
+                 private val transport: IntersticeTransport = IntersticeHttp(),
+                 private val retryMillis: Long = 60_000) {
     private val mutex = Mutex()
     private var connection: IntersticeConnection? = null
     private var installation: String? = null
@@ -73,6 +74,7 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
     val credentialDescription get() = vault.description
     fun binding(): String? = connection?.let { c -> installation?.let { FlowSavvy.fingerprint(c.origin + "|" + c.token) + ":" + it } }
     init {
+        require(retryMillis > 0)
         scope.launch { action {
             val ledger = ledgerStore.read()
             installation = ledger.stringOrNull("installation") ?: UUID.randomUUID().toString().also {
@@ -90,6 +92,12 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
             if (connection != null) { syncLocked(); loadLocked() }
         } }
         scope.launch { sessions.collect { action { if (connection != null) syncLocked() } } }
+        scope.launch {
+            while (isActive) {
+                delay(retryMillis)
+                action { if (connection != null) syncLocked() }
+            }
+        }
     }
     fun connect(origin: String, key: String) = scope.launch { action {
         val candidate = IntersticeConnection.checked(origin, key.trim())
