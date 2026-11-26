@@ -16,6 +16,7 @@ struct TodayView: View {
 
     @State private var showingTimer = false
     @State private var showingFlowSavvy = false
+    @State private var showingInterstice = false
     @State private var showingCalendar = false
     @Environment(CalendarAgenda.self) private var calendarAgenda
     @State private var selectedCategory: Category?
@@ -64,6 +65,7 @@ struct TodayView: View {
                 }
             }
             .navigationBarHidden(true)
+            .sheet(isPresented: $showingInterstice) { IntersticeView() }
             .sheet(isPresented: $showingFlowSavvy) { FlowSavvyView() }
             .sheet(isPresented: $showingCalendar) { CalendarAgendaView() }
             .sheet(isPresented: $showingTimer) {
@@ -84,6 +86,7 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: Theme.Space.lg) {
             PromptHeader(["today", formattedDate()])
             HStack {
+                Button("Interstice tasks") { showingInterstice = true }
                 Button("FlowSavvy tasks") { showingFlowSavvy = true }
                 Spacer()
                 Button("Calendar") { showingCalendar = true }

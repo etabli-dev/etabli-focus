@@ -192,7 +192,7 @@ class PomodoroEngine(
             plannedEndEpoch = s.endEpochMillis ?: now,
             actualEndEpoch = end, activeMillis = active,
             completed = completed, kind = if (s.kind == TimerKind.Focus) "focus" else "break",
-            note = if (s.kind == TimerKind.Focus) s.flowTaskLink?.let { "flowsavvy:v1:$it" } else null,
+            note = if (s.kind == TimerKind.Focus) s.flowTaskLink?.let { com.raban.etabli.focus.interstice.taskSessionNote(it) } else null,
         )
         saveSession(row)
         return row

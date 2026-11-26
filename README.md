@@ -97,3 +97,24 @@ GNU Affero General Public License v3.0 only (AGPL-3.0-only) — see [LICENSE](LI
 before 22 November 2026 remain available under Apache-2.0.
 
 Copyright 2026 R. Heller.
+
+### Interstice candidate connection
+
+The candidate adds **Today → Interstice tasks** on Android, iOS and desktop
+(macOS/Linux). Enter your installation HTTPS address and a separate device access
+key. Read-only shadow workspaces reject timer connections. Existing FlowSavvy
+history and receipts stay separate and are never replayed into Interstice.
+
+Completed productive sessions report cumulative minutes with stable server
+receipts; partial minutes accumulate. Completion requires confirmation and retains
+an exact request for recovery after a lost response. Cached tasks may be stale;
+refresh before relying on their schedule. Android stores the connection through
+Keystore; iOS/macOS use Keychain; Linux retains credentials in memory until exit.
+Task caches and receipt ledgers remain device-local and must not be restored as
+a new device identity. iOS and Android ledgers are excluded from device backups.
+
+This adapter is a production candidate. Native suspension, offline/reconnect,
+restore, notification and signed-device acceptance on macOS, Linux, Android and
+iOS remain release gates. Active timer reservations on the server are not yet
+implemented. Do not retire the existing scheduler based only on compilation or
+unit tests.

@@ -10,8 +10,10 @@ struct RootView: View {
     @Environment(PomodoroEngine.self) private var engine
     @Environment(CalendarAgenda.self) private var calendarAgenda
     @Environment(FlowSavvyStore.self) private var flowSavvy
+    @Environment(IntersticeStore.self) private var interstice
     @Query private var sessions: [Session]
     private var work: [FlowWorkRecord] { sessions.compactMap(\.flowWork) }
+    private var intersticeWork: [FlowWorkRecord] { sessions.compactMap(\.intersticeWork) }
     var body: some View {
         // On iPhone this renders as a tab bar; on iPad iOS 18+ promotes to
         // the sidebar style. iPad split layouts are inside the individual
@@ -39,6 +41,7 @@ struct RootView: View {
             guard scenePhase == .active else { return }
             while !Task.isCancelled {
                 await flowSavvy.sync(work)
+                await interstice.sync(intersticeWork)
                 do { try await Task.sleep(for: .seconds(30)) } catch { return }
             }
         }
@@ -49,6 +52,7 @@ struct RootView: View {
                 do { try await Task.sleep(for: .seconds(30)) } catch { return }
             }
         }
+        .onChange(of: intersticeWork) { _, records in Task { await interstice.sync(records) } }
         .onChange(of: work) { _, records in Task { await flowSavvy.sync(records) } }
     }
 }

@@ -9,7 +9,7 @@ class DesktopKeyVault(private val namespace: String = "flowsavvy", profile: Stri
     private val mac = System.getProperty("os.name").lowercase().startsWith("mac")
     private var memory: String? = null
     override val description: String get() {
-        val subject = if (namespace == "flowsavvy") "API key" else "Calendar credentials"
+        val subject = when (namespace) { "flowsavvy" -> "API key"; "interstice" -> "Interstice connection"; else -> "Calendar credentials" }
         return subject + (if (mac) " saved in macOS Keychain." else " kept in memory until the app closes.") +
             (if (namespace == "flowsavvy") " Requires FlowSavvy Pro." else "")
     }

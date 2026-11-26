@@ -5,7 +5,7 @@ import Foundation
 import CryptoKit
 
 /// Retains the full JSON document when an API update replaces a task.
-indirect enum FlowJSON: Codable, Equatable {
+indirect enum FlowJSON: Codable, Equatable, Sendable {
     case object([String: FlowJSON]), array([FlowJSON]), string(String), number(Double), bool(Bool), null
     init(from decoder: Decoder) throws {
         let c = try decoder.singleValueContainer()
@@ -34,24 +34,26 @@ indirect enum FlowJSON: Codable, Equatable {
     var bool: Bool { if case .bool(let v) = self { return v }; return false }
 }
 
-struct FlowTaskLink: Codable, Equatable, Hashable {
+struct FlowTaskLink: Codable, Equatable, Hashable, Sendable {
     let taskID: String
     let occurrenceDate: String?
     let title: String
     let credentialID: String
     let installationID: String?
+    var provider: String? = nil
     var ledgerID: String { "\(installationID ?? "legacy")|\(credentialID)|\(taskID)|\(occurrenceDate ?? "")" }
     var encoded: String? { (try? JSONEncoder().encode(self)).flatMap { String(data: $0, encoding: .utf8) } }
     static func decode(_ text: String?) -> FlowTaskLink? {
         guard let data = text?.data(using: .utf8) else { return nil }
-        return try? JSONDecoder().decode(Self.self, from: data)
+        guard let link = try? JSONDecoder().decode(Self.self, from: data), link.provider != "interstice" else { return nil }
+        return link
     }
     static func credentialID(_ key: String) -> String {
         SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 }
 
-struct FlowTask: Identifiable, Equatable {
+struct FlowTask: Identifiable, Equatable, Codable, Sendable {
     let link: FlowTaskLink
     let progressMinutes: Int?
     let durationMinutes: Int?
@@ -60,7 +62,7 @@ struct FlowTask: Identifiable, Equatable {
     var title: String { link.title }
 }
 
-struct FlowWorkRecord: Equatable {
+struct FlowWorkRecord: Equatable, Sendable {
     let sessionID: String
     let link: FlowTaskLink
     let seconds: Double

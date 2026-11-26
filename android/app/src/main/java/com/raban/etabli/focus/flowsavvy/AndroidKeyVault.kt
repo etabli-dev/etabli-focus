@@ -15,6 +15,7 @@ import javax.crypto.spec.GCMParameterSpec
 
 class AndroidKeyVault(context: Context, namespace: String = "flowsavvy") : KeyVault {
     override val description = if (namespace == "flowsavvy") "API key encrypted with Android Keystore. Requires FlowSavvy Pro."
+        else if (namespace == "interstice") "Interstice connection encrypted with Android Keystore."
         else "Calendar credentials encrypted with Android Keystore."
     private val file = AtomicFile(File(context.noBackupFilesDir, "$namespace-key"))
     private val alias = "etabli.focus.$namespace"

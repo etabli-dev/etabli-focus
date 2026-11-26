@@ -1,0 +1,73 @@
+// Copyright 2026 R. Heller
+// SPDX-License-Identifier: AGPL-3.0-only
+import Foundation
+
+struct IntersticeConnection: Codable, Sendable {
+    let origin: String
+    let token: String
+    init(origin: String, token: String) throws {
+        let origin = origin.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard let url = URLComponents(string: origin), url.scheme == "https", url.host?.isEmpty == false,
+              url.user == nil, url.password == nil, url.query == nil, url.fragment == nil,
+              !token.isEmpty, !token.unicodeScalars.contains(where: { CharacterSet.whitespacesAndNewlines.contains($0) || CharacterSet.controlCharacters.contains($0) }) else {
+            throw FlowSavvyError(message: "Enter your Interstice HTTPS address and access key.")
+        }
+        self.origin = origin; self.token = token
+    }
+    var binding: String { FlowTaskLink.credentialID(origin + "|" + token) }
+}
+
+private final class IntersticeHTTPSDelegate: NSObject, URLSessionTaskDelegate {
+    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
+}
+
+struct IntersticeClient: Sendable {
+    typealias Transport = @Sendable (URLRequest) async throws -> (Data, Int)
+    private static let session: URLSession = {
+        let config = URLSessionConfiguration.ephemeral
+        config.httpCookieStorage = nil; config.urlCredentialStorage = nil; config.urlCache = nil
+        return URLSession(configuration: config, delegate: IntersticeHTTPSDelegate(), delegateQueue: nil)
+    }()
+    let transport: Transport
+    init(transport: @escaping Transport = { request in
+        let (data, response) = try await IntersticeClient.session.data(for: request)
+        return (data, (response as? HTTPURLResponse)?.statusCode ?? 0)
+    }) { self.transport = transport }
+    func request(_ method: String, _ path: String, connection: IntersticeConnection,
+                 body: [String: FlowJSON]? = nil, headers: [String: String] = [:]) async throws -> [String: FlowJSON] {
+        guard path.hasPrefix("/api/v1/"), !path.contains(".."), let url = URL(string: connection.origin + path) else {
+            throw FlowSavvyError(message: "Invalid Interstice address.")
+        }
+        var request = URLRequest(url: url); request.httpMethod = method; request.timeoutInterval = 90
+        request.setValue("Bearer \(connection.token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        for (key, value) in headers { request.setValue(value, forHTTPHeaderField: key) }
+        if let body {
+            request.httpBody = try JSONEncoder().encode(FlowJSON.object(body))
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+        let (data, status) = try await transport(request)
+        guard (200..<300).contains(status), data.count <= 16_000_000 else {
+            throw FlowSavvyError(message: "Interstice request failed (\(status)). Saved work remains on this device.")
+        }
+        return try JSONDecoder().decode(FlowJSON.self, from: data).object
+    }
+    static func component(_ value: String) -> String {
+        value.addingPercentEncoding(withAllowedCharacters: CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_~")))!
+    }
+}
+
+struct IntersticeCompletion: Codable {
+    let binding: String
+    let taskID: String
+    let revision: Int
+    let key: String
+}
+struct IntersticeLedger: Codable {
+    var installationID = UUID().uuidString
+    var receipts: [String: Int] = [:]
+    var completion: IntersticeCompletion?
+    var cachedTasks: [FlowTask] = []
+    var cacheBinding: String?
+}

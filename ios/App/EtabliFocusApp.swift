@@ -10,6 +10,7 @@ struct EtabliFocusApp: App {
 
     @State private var engine = PomodoroEngine()
     @State private var flowSavvy = FlowSavvyStore()
+    @State private var interstice = IntersticeStore()
     @State private var calendarAgenda = CalendarAgenda()
 
     init() { AppearancePreference.migrateLegacyMode(in: .standard) }
@@ -29,6 +30,7 @@ struct EtabliFocusApp: App {
                         .modelContainer(container)
                         .environment(engine)
                         .environment(flowSavvy)
+                        .environment(interstice)
                         .environment(calendarAgenda)
                         .task {
                             // Seed default categories on first launch.

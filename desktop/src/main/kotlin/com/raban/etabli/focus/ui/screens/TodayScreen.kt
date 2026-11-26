@@ -74,6 +74,16 @@ fun TodayScreen(app: FocusApp) {
         com.raban.etabli.focus.calendar.CalendarPanel(app.calendar) { showCalendar = false }
         return
     }
+    var showInterstice by remember { mutableStateOf(false) }
+    if (showInterstice) {
+        val taskCategories by app.db.categoryDao().observeAll().collectAsState(initial = emptyList())
+        val taskTimer by app.engine.state.collectAsState()
+        com.raban.etabli.focus.interstice.IntersticePanel(app.interstice, taskCategories,
+            taskTimer.phase == TimerPhase.Idle, { showInterstice = false }) { category, minutes, link ->
+            app.engine.start(category, TimerKind.Focus, minutes, link)
+        }
+        return
+    }
     var showFlowSavvy by remember { mutableStateOf(false) }
     if (showFlowSavvy) {
         val flowCategories by app.db.categoryDao().observeAll().collectAsState(initial = emptyList())
@@ -107,7 +117,8 @@ fun TodayScreen(app: FocusApp) {
         ) {
             PromptHeader(listOf("today", today.date.toString()))
             com.raban.etabli.focus.calendar.CalendarUpcoming(app.calendar) { showCalendar = true }
-            androidx.compose.material3.OutlinedButton(onClick = { showFlowSavvy = true }) { Text("FlowSavvy tasks") }
+            androidx.compose.material3.OutlinedButton(onClick = { showInterstice = true }) { Text("Interstice tasks") }
+        androidx.compose.material3.OutlinedButton(onClick = { showFlowSavvy = true }) { Text("FlowSavvy tasks") }
             state.flowTaskLink?.let { raw -> runCatching { org.json.JSONObject(raw).optString("title") }.getOrNull()?.let { Text(it) } }
             timerError?.let { Text(it, style = t.font.body.copy(color = t.color.danger)) }
             if (wide) {

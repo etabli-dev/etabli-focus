@@ -50,6 +50,8 @@ jobs:
         run: |
           swiftc ios/App/FlowSavvy/FlowSavvyCore.swift ios/App/TimerState.swift scripts/check_flowsavvy.swift -o "$RUNNER_TEMP/focus-flow-check"
           "$RUNNER_TEMP/focus-flow-check"
+          swiftc ios/App/FlowSavvy/FlowSavvyCore.swift ios/App/Interstice/IntersticeCore.swift scripts/check_interstice.swift -o "$RUNNER_TEMP/focus-interstice-check"
+          "$RUNNER_TEMP/focus-interstice-check"
           swiftc ios/App/Calendar/CalendarReminderPlan.swift scripts/check_calendar_reminders.swift -o "$RUNNER_TEMP/focus-calendar-check"
           "$RUNNER_TEMP/focus-calendar-check"
       - name: Build unsigned iOS simulator application

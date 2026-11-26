@@ -21,9 +21,9 @@ import java.time.LocalDate
 /** A task identity includes its occurrence and credential binding, never the API key. */
 data class FlowTask(val id: String, val title: String, val occurrence: String? = null,
                     val scheduled: String? = null, val progress: Int = 0, val duration: Int? = null,
-                    val credentialBinding: String? = null) {
+                    val credentialBinding: String? = null, val provider: String = "flowsavvy") {
     fun link(binding: String) = JSONObject().put("v", 1).put("binding", binding).put("id", id)
-        .put("title", title).put("occurrence", occurrence ?: JSONObject.NULL).toString()
+        .put("title", title).put("occurrence", occurrence ?: JSONObject.NULL).put("provider", provider).toString()
     val identity: String get() = "$id|${occurrence.orEmpty()}"
 }
 

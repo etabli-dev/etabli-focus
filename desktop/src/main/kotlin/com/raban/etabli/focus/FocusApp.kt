@@ -45,6 +45,12 @@ class FocusApp(val paths: AppPaths) : AutoCloseable {
         onFinished = { completions.trySend(it) },
     )
 
+    val interstice = com.raban.etabli.focus.interstice.Interstice(
+        com.raban.etabli.focus.flowsavvy.DesktopKeyVault("interstice", profile = paths.root.toAbsolutePath().normalize().toString()),
+        com.raban.etabli.focus.flowsavvy.FileLedger(paths.root.resolve("interstice-ledger.json")),
+        db.sessionDao().observeAll(), appScope,
+    )
+
     val flowSavvy = com.raban.etabli.focus.flowsavvy.FlowSavvy(
         com.raban.etabli.focus.flowsavvy.DesktopKeyVault(profile = paths.root.toAbsolutePath().normalize().toString()),
         com.raban.etabli.focus.flowsavvy.FileLedger(paths.root.resolve("flowsavvy-ledger.json")),

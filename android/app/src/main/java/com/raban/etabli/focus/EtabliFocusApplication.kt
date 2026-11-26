@@ -21,6 +21,8 @@ class EtabliFocusApplication : Application() {
         private set
     lateinit var engine: PomodoroEngine
         private set
+    lateinit var interstice: com.raban.etabli.focus.interstice.Interstice
+        private set
     lateinit var flowSavvy: com.raban.etabli.focus.flowsavvy.FlowSavvy
         private set
     val openCalendar = kotlinx.coroutines.flow.MutableStateFlow(false)
@@ -34,6 +36,11 @@ class EtabliFocusApplication : Application() {
         db = AppDatabase.get(this)
         engine = PomodoroEngine.get(this, db, appScope)
         themeRepo = ThemeRepo(this)
+        interstice = com.raban.etabli.focus.interstice.Interstice(
+            com.raban.etabli.focus.flowsavvy.AndroidKeyVault(this, "interstice"),
+            com.raban.etabli.focus.flowsavvy.FileLedger(java.io.File(noBackupFilesDir, "interstice-ledger.json").toPath()),
+            db.sessionDao().observeAll(), appScope,
+        )
         flowSavvy = com.raban.etabli.focus.flowsavvy.FlowSavvy(
             com.raban.etabli.focus.flowsavvy.AndroidKeyVault(this),
             com.raban.etabli.focus.flowsavvy.FileLedger(java.io.File(noBackupFilesDir, "flowsavvy-ledger.json").toPath()),
