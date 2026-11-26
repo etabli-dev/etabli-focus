@@ -31,6 +31,7 @@ struct IntersticeView: View {
                     Text("Connect Interstice to focus on your scheduled tasks. Work time syncs automatically; completing a task always needs your confirmation.")
                     if store.connected {
                         Label("Connected", systemImage: "checkmark.circle")
+                        if let refreshed = store.lastSynced { Text("Task copy refreshed: \(refreshed.formatted())").font(.footnote) }
                         Button("Refresh tasks") { Task { await store.refresh() } }.disabled(store.busy)
                         Button("Disconnect", role: .destructive) { store.disconnect() }.disabled(store.busy || engine.state.phase != .idle)
                     } else {

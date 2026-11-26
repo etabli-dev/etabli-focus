@@ -70,4 +70,5 @@ struct IntersticeLedger: Codable {
     var completion: IntersticeCompletion?
     var cachedTasks: [FlowTask] = []
     var cacheBinding: String?
+    var cachedAt: Date?
 }

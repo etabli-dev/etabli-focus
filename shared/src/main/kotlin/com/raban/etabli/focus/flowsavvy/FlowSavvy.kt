@@ -73,7 +73,7 @@ class FlowHttp : FlowTransport {
 
 data class FlowStatus(val connected: Boolean = false, val busy: Boolean = false,
                       val tasks: List<FlowTask> = emptyList(), val message: String? = null,
-                      val pendingMinutes: Long = 0)
+                      val pendingMinutes: Long = 0, val syncedAt: String? = null)
 
 /** One serialized writer, durable absolute-progress intents, and explicit completion. */
 class FlowSavvy(

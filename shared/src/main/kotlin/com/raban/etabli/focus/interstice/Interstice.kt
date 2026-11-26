@@ -85,7 +85,7 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
                     val row = cached.getJSONObject(index)
                     FlowTask(row.getString("id"), row.getString("title"), scheduled = row.stringOrNull("scheduled"),
                         progress = row.getInt("progress"), duration = row.getInt("minutes"), credentialBinding = binding(), provider = "interstice")
-                }, message = "Cached tasks may be stale; refresh when connected.") }
+                }, syncedAt = ledger.stringOrNull("cachedAt"), message = "Cached tasks may be stale; refresh when connected.") }
             }
             if (connection != null) { syncLocked(); loadLocked() }
         } }
@@ -174,12 +174,13 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
                 progress = it.getInt("progress"), duration = it.getInt("minutes"), credentialBinding = binding(), provider = "interstice")
         }.sortedWith(compareBy<FlowTask> { it.scheduled == null }.thenBy { it.scheduled }.thenBy { it.title })
         val ledger = ledgerStore.read()
-        ledger.put("cacheBinding", binding()).put("cachedTasks", JSONArray().apply {
+        val syncedAt = java.time.Instant.now().toString()
+        ledger.put("cacheBinding", binding()).put("cachedAt", syncedAt).put("cachedTasks", JSONArray().apply {
             tasks.forEach { put(JSONObject().put("id", it.id).put("title", it.title).put("scheduled", it.scheduled ?: JSONObject.NULL)
                 .put("progress", it.progress).put("minutes", it.duration)) }
         })
         ledgerStore.write(ledger)
-        _status.update { it.copy(tasks = tasks, message = if (!plan.optBoolean("calendar_inputs_ready")) "Calendar data is stale or incomplete; check the schedule before relying on it." else it.message) }
+        _status.update { it.copy(tasks = tasks, syncedAt = syncedAt, message = if (!plan.optBoolean("calendar_inputs_ready")) "Calendar data is stale or incomplete; check the schedule before relying on it." else it.message) }
     }
     companion object { const val PREFIX = "interstice:v1:" }
 }

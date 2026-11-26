@@ -48,6 +48,7 @@ fun IntersticePanel(service: Interstice, categories: List<CategoryEntity>, timer
                 TextButton(enabled = !status.busy, onClick = { service.disconnect() }) { Text("Disconnect") }
             }
             Text("Scheduled tasks first · server planning horizon", style = MaterialTheme.typography.bodySmall)
+            status.syncedAt?.let { Text("Task copy refreshed: $it", style = MaterialTheme.typography.bodySmall) }
             Box {
                 OutlinedButton(onClick = { showCategories = true }) { Text(category?.name ?: "Create a category first") }
                 DropdownMenu(expanded = showCategories, onDismissRequest = { showCategories = false }) {

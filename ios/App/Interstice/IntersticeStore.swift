@@ -11,6 +11,7 @@ final class IntersticeStore {
     private(set) var busy = false
     private(set) var message: String?
     private(set) var pendingMinutes = 0
+    private(set) var lastSynced: Date?
     private var connection: IntersticeConnection?
     private var ledger = IntersticeLedger()
     private var file: URL?
@@ -33,7 +34,10 @@ final class IntersticeStore {
                 connection = try IntersticeConnection(origin: decoded.origin, token: decoded.token)
             }
             connected = connection != nil
-            if ledger.cacheBinding == connection?.binding { tasks = ledger.cachedTasks }
+            if ledger.cacheBinding == connection?.binding {
+                tasks = ledger.cachedTasks; lastSynced = ledger.cachedAt
+                if !tasks.isEmpty { message = "Cached tasks may be stale; refresh when connected." }
+            }
         } catch { file = nil; message = "Saved connection or receipt history could not be read. Sync is paused to protect recorded work." }
     }
     private func save() throws {
@@ -62,7 +66,7 @@ final class IntersticeStore {
     func refresh() async {
         guard !busy, connection != nil, file != nil else { return }
         busy = true; defer { busy = false }
-        do { try await finishCompletion(); try await load(); message = nil }
+        do { try await finishCompletion(); try await load() }
         catch { message = error.localizedDescription }
     }
     func sync(_ records: [FlowWorkRecord]) async {
@@ -110,7 +114,7 @@ final class IntersticeStore {
                 ledger.completion = IntersticeCompletion(binding: connection.binding, taskID: task.link.taskID, revision: revision, key: UUID().uuidString)
                 try save(); try await finishCompletion()
             }
-            try await load(); message = nil
+            try await load()
         } catch { message = error.localizedDescription }
     }
     private func finishCompletion() async throws {
@@ -137,7 +141,9 @@ final class IntersticeStore {
                 installationID: ledger.installationID, provider: "interstice")
             return FlowTask(link: link, progressMinutes: row["progress"]?.int, durationMinutes: row["minutes"]?.int, scheduledStart: starts[id])
         }.sorted { ($0.scheduledStart ?? "~", $0.title) < ($1.scheduledStart ?? "~", $1.title) }
+        lastSynced = Date(); ledger.cachedAt = lastSynced
         ledger.cachedTasks = tasks; ledger.cacheBinding = connection.binding; try save()
+        message = plan["calendar_inputs_ready"]?.bool == true ? nil : "Calendar data is stale or incomplete; check the schedule before relying on it."
     }
 }
 
