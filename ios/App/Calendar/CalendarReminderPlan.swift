@@ -21,7 +21,7 @@ struct CalendarReminder: Equatable {
         "\(appointment.title)|\(appointment.calendarTitle)|\(appointment.start.timeIntervalSince1970)|\(fire.timeIntervalSince1970)|\(leadMinutes)|\(appointment.allDay)"
     }
 }
-struct PendingCalendarReminder {
+struct PendingCalendarReminder: Sendable {
     let id: String
     let fire: Date?
     let fingerprint: String?

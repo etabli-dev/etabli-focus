@@ -79,12 +79,16 @@ final class CalendarAgenda {
                                 calendarTitle: $0.calendar.title, start: $0.startDate, end: $0.endDate, allDay: $0.isAllDay)
         }.sorted { $0.start < $1.start }
         message = nil
-        let permissions = await UNUserNotificationCenter.current().notificationSettings()
-        if remindersEnabled && permissions.authorizationStatus != .authorized && permissions.authorizationStatus != .provisional {
+        let authorizationStatus: Int = await withCheckedContinuation { continuation in
+            UNUserNotificationCenter.current().getNotificationSettings { settings in
+                continuation.resume(returning: settings.authorizationStatus.rawValue)
+            }
+        }
+        if remindersEnabled && authorizationStatus != UNAuthorizationStatus.authorized.rawValue && authorizationStatus != UNAuthorizationStatus.provisional.rawValue {
             message = String(localized: "Calendar events are visible, but notifications are disabled. Enable notifications in Settings to receive reminders.")
         }
         let plan = CalendarReminderPlan.make(events: appointments, now: now, leadMinutes: leadMinutes)
-        let newSignature = "\(selectedIDs.sorted())|\(leadMinutes)|\(remindersEnabled)|\(permissions.authorizationStatus.rawValue)|" + appointments.map { "\($0.id)|\($0.title)|\($0.calendarTitle)|\($0.end.timeIntervalSince1970)" }.joined(separator: ";") + "|\(plan.map(\.id))|\(TimeZone.current.identifier)"
+        let newSignature = "\(selectedIDs.sorted())|\(leadMinutes)|\(remindersEnabled)|\(authorizationStatus)|" + appointments.map { "\($0.id)|\($0.title)|\($0.calendarTitle)|\($0.end.timeIntervalSince1970)" }.joined(separator: ";") + "|\(plan.map(\.id))|\(TimeZone.current.identifier)"
         guard newSignature != signature else { return }
         guard remindersEnabled else {
             await removeReminders()
@@ -92,12 +96,8 @@ final class CalendarAgenda {
             return
         }
         let center = UNUserNotificationCenter.current()
-        let pending = await center.pendingNotificationRequests()
-        let changes = CalendarReminderPlan.reconcile(plan: plan, pending: pending.map {
-            PendingCalendarReminder(id: $0.identifier,
-                fire: ($0.content.userInfo["calendarFire"] as? Double).map { Date(timeIntervalSince1970: $0) } ?? ($0.trigger as? UNTimeIntervalNotificationTrigger)?.nextTriggerDate(),
-                fingerprint: $0.content.userInfo["calendarFingerprint"] as? String)
-        }, now: Date())
+        let pending = await pendingReminders(center)
+        let changes = CalendarReminderPlan.reconcile(plan: plan, pending: pending, now: Date())
         center.removePendingNotificationRequests(withIdentifiers: changes.remove)
         do {
             for reminder in changes.schedule {
@@ -120,8 +120,20 @@ final class CalendarAgenda {
     }
     private func removeReminders() async {
         let center = UNUserNotificationCenter.current()
-        let pending = await center.pendingNotificationRequests()
-        center.removePendingNotificationRequests(withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix(reminderPrefix) })
+        let pending = await pendingReminders(center)
+        center.removePendingNotificationRequests(withIdentifiers: pending.map(\.id).filter { $0.hasPrefix(reminderPrefix) })
+    }
+    private func pendingReminders(_ center: UNUserNotificationCenter) async -> [PendingCalendarReminder] {
+        await withCheckedContinuation { continuation in
+            center.getPendingNotificationRequests { requests in
+                let pending = requests.map {
+                    PendingCalendarReminder(id: $0.identifier,
+                        fire: ($0.content.userInfo["calendarFire"] as? Double).map { Date(timeIntervalSince1970: $0) } ?? ($0.trigger as? UNTimeIntervalNotificationTrigger)?.nextTriggerDate(),
+                        fingerprint: $0.content.userInfo["calendarFingerprint"] as? String)
+                }
+                continuation.resume(returning: pending)
+            }
+        }
     }
 }
 
