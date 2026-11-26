@@ -101,7 +101,7 @@ struct TodayView: View {
                     MonoLabel("Pick a category below to start a focus block.",
                               color: Theme.Color.faint)
                 } else {
-                    if let link = FlowTaskLink.decode(engine.state.flowSavvyLink) { Text(link.title).font(.headline) }
+                    if let link = FlowTaskLink.decode(engine.state.flowSavvyLink) ?? FlowTaskLink.decode(engine.state.flowSavvyLink, provider: "interstice") { Text(link.title).font(.headline) }
                     LiveTimerInline()
                         .environment(engine)
                 }

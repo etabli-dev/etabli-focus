@@ -43,9 +43,9 @@ struct FlowTaskLink: Codable, Equatable, Hashable, Sendable {
     var provider: String? = nil
     var ledgerID: String { "\(installationID ?? "legacy")|\(credentialID)|\(taskID)|\(occurrenceDate ?? "")" }
     var encoded: String? { (try? JSONEncoder().encode(self)).flatMap { String(data: $0, encoding: .utf8) } }
-    static func decode(_ text: String?) -> FlowTaskLink? {
+    static func decode(_ text: String?, provider: String = "flowsavvy") -> FlowTaskLink? {
         guard let data = text?.data(using: .utf8) else { return nil }
-        guard let link = try? JSONDecoder().decode(Self.self, from: data), link.provider != "interstice" else { return nil }
+        guard let link = try? JSONDecoder().decode(Self.self, from: data), (link.provider ?? "flowsavvy") == provider else { return nil }
         return link
     }
     static func credentialID(_ key: String) -> String {
