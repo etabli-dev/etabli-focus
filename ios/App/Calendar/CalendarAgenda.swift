@@ -41,7 +41,12 @@ final class CalendarAgenda {
     }
     func requestAccess() async {
         do {
-            let granted = try await store.requestFullAccessToEvents()
+            let granted: Bool = try await withCheckedThrowingContinuation { continuation in
+                store.requestFullAccessToEvents { granted, error in
+                    if let error { continuation.resume(throwing: error) }
+                    else { continuation.resume(returning: granted) }
+                }
+            }
             if granted {
                 if UserDefaults.standard.object(forKey: "focus.calendar.selected") == nil {
                     selectedIDs = Set(store.calendars(for: .event).map(\.calendarIdentifier))
