@@ -135,7 +135,7 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
         val ledger = ledgerStore.read()
         val pending = ledger.optJSONObject("edit")
         if (pending != null) {
-            check(pending.getString("id") == task.id && pending.getJSONObject("body").similar(body)) {
+            check(pending.getString("id") == task.id && pending.getJSONObject("body").sameDetails(body)) {
                 "An earlier edit is waiting to sync. Close this editor and use Refresh / retry sync first."
             }
         } else {
@@ -248,6 +248,8 @@ fun taskSessionNote(link: String): String {
 }
 
 internal fun JSONObject.topicTags(): List<String> = optJSONArray("tags")?.let { array -> (0 until array.length()).map { array.getString(it) } } ?: emptyList()
+internal fun JSONObject.sameDetails(other: JSONObject): Boolean =
+    listOf("list", "category", "person", "communication_mode").all { getString(it) == other.getString(it) } && topicTags() == other.topicTags()
 val intersticeCategories = linkedMapOf("discussion" to "Discussion", "writing" to "Writing & review", "research" to "Research & analysis",
     "software" to "Software & systems", "administration" to "Administration & planning", "security" to "Security & accounts",
     "learning" to "Learning & teaching", "practical" to "Errands & practical work", "other" to "Other")

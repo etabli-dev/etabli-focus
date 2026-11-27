@@ -203,4 +203,18 @@ class IntersticeTest {
         assertFails { details().copy(category="tenth").body() };assertFails { details().copy(person="x".repeat(201)).body() };Unit
     }
 
+    @Test fun pendingEditCannotBeReplacedAndCanBeRetriedUnchanged() = runBlocking {
+        Fixture().use { f ->
+            f.connect(); val task=f.service.status.value.tasks.single(); f.remote.offline=true
+            f.service.saveDetails(task,details()) {}.join()
+            val pending=f.ledger.value.getJSONObject("edit").toString()
+            f.service.saveDetails(task,details().copy(person="Different")) {}.join()
+            assertEquals(pending,f.ledger.value.getJSONObject("edit").toString())
+            assertContains(f.service.status.value.message.orEmpty(),"earlier edit")
+            f.remote.offline=false;var saved=false
+            f.service.saveDetails(task,details()) { saved=true }.join()
+            assertTrue(saved);assertEquals(1,f.remote.edits);assertFalse(f.ledger.value.has("edit"))
+        }
+    }
+
 }
