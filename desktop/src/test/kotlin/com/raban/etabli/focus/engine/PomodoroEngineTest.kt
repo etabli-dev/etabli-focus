@@ -257,7 +257,11 @@ class PomodoroEngineTest {
         assertEquals(T0 + 50 * MINUTE, row.actualEndEpoch, "completion is dated at the deadline, not the late start-up")
         assertEquals(50 * MINUTE, row.activeMillis)
         assertEquals(listOf(row), finished)
-        val idle = second.awaitState { it.phase == TimerPhase.Idle }
+        // Joining a command waits for persistence, not the separate stateIn
+        // collector. Its initial Idle/zero value is not the reconciled state.
+        val idle = second.awaitState {
+            it.phase == TimerPhase.Idle && it.blocksCompletedInSet == 1
+        }
         assertEquals(1, idle.blocksCompletedInSet)
         quit()
 
@@ -266,7 +270,10 @@ class PomodoroEngineTest {
         third.tick().join()
         assertEquals(1, history.size)
         assertEquals(1, finished.size)
-        assertEquals(1, third.awaitState { it.phase == TimerPhase.Idle }.blocksCompletedInSet)
+        val restored = third.awaitState {
+            it.phase == TimerPhase.Idle && it.blocksCompletedInSet == 1
+        }
+        assertEquals(1, restored.blocksCompletedInSet)
     }
 
     @Test fun reconciliationWritesOneRowToTheSqliteHistory() = install {
