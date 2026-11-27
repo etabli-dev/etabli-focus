@@ -76,3 +76,14 @@ struct IntersticeLedger: Codable {
     var cacheBinding: String?
     var cachedAt: Date?
 }
+
+let intersticeCategories: [(String, String)] = [("discussion", "Discussion"), ("writing", "Writing & review"),
+    ("research", "Research & analysis"), ("software", "Software & systems"), ("administration", "Administration & planning"),
+    ("security", "Security & accounts"), ("learning", "Learning & teaching"), ("practical", "Errands & practical work"), ("other", "Other")]
+extension FlowTask {
+    var contextLabel: String {
+        let mode = ["meeting":"Meeting", "phone":"Phone call", "email":"Email", "video":"Video call", "message":"Message"][communicationMode ?? ""]
+        return [workList, intersticeCategories.first { $0.0 == (category ?? "other") }?.1 ?? "Other", person, mode,
+            tags?.map { "#" + $0 }.joined(separator: " ")].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+}

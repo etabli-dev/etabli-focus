@@ -31,12 +31,14 @@ class IntersticeTest {
         var mode = "test"
         var offline = false
         var completionConflict = false
+        var scheduleUnavailable = false
         override suspend fun request(connection: IntersticeConnection, method: String, path: String, body: JSONObject?, headers: Map<String,String>): JSONObject {
             check(!offline) { "Offline" }
             calls += "$method $path"
             if (path.endsWith("/status")) return JSONObject().put("role","admin").put("mode",mode)
+            if (path.endsWith("/schedule") && scheduleUnavailable) throw IntersticeHTTPError(503)
             if (path.endsWith("/schedule")) return JSONObject().put("blocks",JSONArray()).put("calendar_inputs_ready",true)
-            if (method == "GET") return JSONObject().put("tasks",JSONArray().put(JSONObject().put("id","one").put("title","Task").put("minutes",60).put("progress",progress).put("completed",complete).put("revision",1)))
+            if (method == "GET") return JSONObject().put("tasks",JSONArray().put(JSONObject().put("id","one").put("title","Task").put("minutes",60).put("progress",progress).put("completed",complete).put("revision",1).put("list","Forschung").put("category","discussion").put("person","Alex").put("communication_mode","phone").put("tags",JSONArray().put("budget"))))
             val key = headers.getValue("Idempotency-Key")
             if (receipts.containsKey(key)) return receipts.getValue(key)
             if (path.endsWith("/complete") && completionConflict) throw IntersticeHTTPError(409)
@@ -126,4 +128,21 @@ class IntersticeTest {
             assertTrue(f.remote.complete)
         }
     }
+    @Test fun taskContextSurvivesScheduleFailureAndOfflineRestart() = runBlocking {
+        Fixture().use { f ->
+            f.remote.scheduleUnavailable = true; f.connect()
+            val task = f.service.status.value.tasks.single()
+            assertEquals("discussion", task.category); assertEquals("Forschung", task.workList)
+            assertContains(task.contextLabel(), "Alex"); assertContains(task.contextLabel(), "Phone call")
+            assertContains(task.contextLabel(), "#budget")
+            assertContains(f.service.status.value.message.orEmpty(), "Schedule unavailable")
+            f.remote.offline = true
+            val restartedScope = CoroutineScope(SupervisorJob()+Dispatchers.Unconfined)
+            try {
+                val restarted = Interstice(f.vault,f.ledger,f.history,restartedScope,f.remote)
+                assertEquals(task, restarted.status.value.tasks.single())
+            } finally { restartedScope.cancel() }
+        }
+    }
+
 }

@@ -22,6 +22,8 @@ struct IntersticeView: View {
     @State private var categoryID: UUID?
     @State private var minutes = 25
     @State private var confirming: FlowTask?
+    @State private var taskQuery = ""
+    @State private var taskCategory = ""
     private var category: Category? { categories.first { $0.id == categoryID } ?? categories.first }
 
     var body: some View {
@@ -60,10 +62,16 @@ struct IntersticeView: View {
                         if engine.state.phase != .idle { Text("A timer is already active. Return to Today to pause or stop it.") }
                     }
                     Section("Tasks · scheduled first") {
+                        TextField("Find by list, person or topic", text: $taskQuery)
+                        Picker("Task category", selection: $taskCategory) {
+                            Text("All categories").tag("")
+                            ForEach(intersticeCategories, id: \.0) { item in Text(item.1).tag(item.0) }
+                        }
                         if store.tasks.isEmpty { Text("No open tasks found. Recurring occurrences appear within the server planning horizon.") }
-                        ForEach(store.tasks) { task in
+                        ForEach(store.tasks.filter { (taskCategory.isEmpty || ($0.category ?? "other") == taskCategory) && (taskQuery.trimmingCharacters(in: .whitespaces).isEmpty || ($0.title + " " + $0.contextLabel).localizedCaseInsensitiveContains(taskQuery.trimmingCharacters(in: .whitespaces))) }) { task in
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(task.title).font(.headline)
+                                Text(task.contextLabel).font(.caption)
                                 if let scheduled = task.scheduledStart { Text(scheduled.replacingOccurrences(of: "T", with: " · ")).font(.caption) }
                                 if let progress = task.progressMinutes, let planned = task.durationMinutes {
                                     Text("\(progress) min recorded / \(planned) min planned").font(.caption)

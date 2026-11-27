@@ -23,6 +23,9 @@ fun IntersticePanel(service: Interstice, categories: List<CategoryEntity>, timer
     var categoryID by remember { mutableStateOf<String?>(null) }
     var showCategories by remember { mutableStateOf(false) }
     var minutes by remember { mutableIntStateOf(25) }
+    var taskQuery by remember { mutableStateOf("") }
+    var taskCategory by remember { mutableStateOf("") }
+    var showTaskCategories by remember { mutableStateOf(false) }
     var confirmation by remember { mutableStateOf<FlowTask?>(null) }
     val category = categories.firstOrNull { it.id == categoryID } ?: categories.firstOrNull()
     LaunchedEffect(Unit) { service.refresh() }
@@ -47,6 +50,16 @@ fun IntersticePanel(service: Interstice, categories: List<CategoryEntity>, timer
                 Button(enabled = !status.busy, onClick = { service.refresh() }) { Text("Refresh / retry sync") }
                 TextButton(enabled = !status.busy, onClick = { service.disconnect() }) { Text("Disconnect") }
             }
+            OutlinedTextField(value = taskQuery, onValueChange = { taskQuery = it }, label = { Text("Find by list, person or topic") }, modifier = Modifier.fillMaxWidth())
+            Box {
+                OutlinedButton(onClick = { showTaskCategories = true }) { Text(intersticeCategories[taskCategory] ?: "All task categories") }
+                DropdownMenu(expanded = showTaskCategories, onDismissRequest = { showTaskCategories = false }) {
+                    (mapOf("" to "All task categories") + intersticeCategories).forEach { (id, label) ->
+                        DropdownMenuItem(text = { Text(label) }, onClick = { taskCategory = id; showTaskCategories = false })
+                    }
+                }
+            }
+            Text("Timer category", style = MaterialTheme.typography.labelMedium)
             Text("Scheduled tasks first · server planning horizon", style = MaterialTheme.typography.bodySmall)
             status.syncedAt?.let { Text("Task copy refreshed: $it", style = MaterialTheme.typography.bodySmall) }
             Box {
@@ -66,10 +79,11 @@ fun IntersticePanel(service: Interstice, categories: List<CategoryEntity>, timer
         status.message?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error) } }
         if (status.pendingMinutes > 0) item { Text("${status.pendingMinutes} minutes waiting to sync") }
         if (status.connected && !status.busy && status.tasks.isEmpty()) item { Text("No open tasks found. Recurring occurrences appear within the server planning horizon.") }
-        items(status.tasks, key = { it.identity }) { task ->
+        items(status.tasks.filter { (taskCategory.isEmpty() || it.category == taskCategory) && (it.title + " " + it.contextLabel()).contains(taskQuery.trim(), ignoreCase = true) }, key = { it.identity }) { task ->
             OutlinedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(task.title, style = MaterialTheme.typography.titleMedium)
+                    Text(task.contextLabel(), style = MaterialTheme.typography.bodySmall)
                     task.scheduled?.let { Text(it.replace('T', ' '), style = MaterialTheme.typography.bodySmall) }
                     Text("${task.progress} min reported" + (task.duration?.let { " · $it min planned" } ?: ""), style = MaterialTheme.typography.bodySmall)
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

@@ -24,6 +24,15 @@ import Foundation
         let rejecting = IntersticeClient { _ in (Data("{}".utf8), 403) }
         do { _ = try await rejecting.request("GET", "/api/v1/tasks", connection: connection); fatalError("Denied request accepted") }
         catch { }
+        let oldTask = FlowTask(link: link, progressMinutes: 0, durationMinutes: 30, scheduledStart: nil)
+        let oldJSON = try JSONEncoder().encode(oldTask)
+        let decoded = try JSONDecoder().decode(FlowTask.self, from: oldJSON)
+        precondition(decoded.category == nil)
+        let tagged = FlowTask(link: link, progressMinutes: 0, durationMinutes: 30, scheduledStart: nil,
+            workList: "Forschung", category: "discussion", person: "Alex", communicationMode: "phone", tags: ["budget"])
+        let restored = try JSONDecoder().decode(FlowTask.self, from: JSONEncoder().encode(tagged))
+        precondition(restored == tagged && restored.contextLabel.contains("Alex") && restored.contextLabel.contains("Phone call"))
+        precondition(intersticeCategories.count == 9)
         print("Interstice client contract checks passed")
     }
 }

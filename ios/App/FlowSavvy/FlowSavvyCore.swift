@@ -58,6 +58,11 @@ struct FlowTask: Identifiable, Equatable, Codable, Sendable {
     let progressMinutes: Int?
     let durationMinutes: Int?
     let scheduledStart: String?
+    var workList: String? = nil
+    var category: String? = nil
+    var person: String? = nil
+    var communicationMode: String? = nil
+    var tags: [String]? = nil
     var id: String { link.ledgerID }
     var title: String { link.title }
 }

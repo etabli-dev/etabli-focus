@@ -132,7 +132,10 @@ final class IntersticeStore {
     private func load() async throws {
         guard let connection else { return }
         let response = try await client.request("GET", "/api/v1/tasks", connection: connection)
-        let plan = try await client.request("GET", "/api/v1/schedule", connection: connection)
+        var plan: [String: FlowJSON] = [:]
+        var scheduleUnavailable = false
+        do { plan = try await client.request("GET", "/api/v1/schedule", connection: connection) }
+        catch let error as IntersticeHTTPError where error.status == 503 { scheduleUnavailable = true }
         var starts: [String: String] = [:]
         for block in plan["blocks"]?.array ?? [] {
             if let id = block.object["task_id"]?.string, let start = block.object["start"]?.string {
@@ -144,11 +147,13 @@ final class IntersticeStore {
             guard row["completed"]?.bool != true, let id = row["id"]?.string, let title = row["title"]?.string else { return nil }
             let link = FlowTaskLink(taskID: id, occurrenceDate: nil, title: title, credentialID: connection.binding,
                 installationID: ledger.installationID, provider: "interstice")
-            return FlowTask(link: link, progressMinutes: row["progress"]?.int, durationMinutes: row["minutes"]?.int, scheduledStart: starts[id])
+            return FlowTask(link: link, progressMinutes: row["progress"]?.int, durationMinutes: row["minutes"]?.int, scheduledStart: starts[id], workList: row["list"]?.string,
+                category: row["category"]?.string, person: row["person"]?.string,
+                communicationMode: row["communication_mode"]?.string, tags: row["tags"]?.array.compactMap(\.string))
         }.sorted { ($0.scheduledStart ?? "~", $0.title) < ($1.scheduledStart ?? "~", $1.title) }
         lastSynced = Date(); ledger.cachedAt = lastSynced
         ledger.cachedTasks = tasks; ledger.cacheBinding = connection.binding; try save()
-        message = plan["calendar_inputs_ready"]?.bool == true ? nil : "Calendar data is stale or incomplete; check the schedule before relying on it."
+        message = scheduleUnavailable ? "Schedule unavailable; task details are current but no planned times are shown." : plan["calendar_inputs_ready"]?.bool == true ? nil : "Calendar data is stale or incomplete; check the schedule before relying on it."
     }
 }
 

@@ -118,3 +118,9 @@ restore, notification and signed-device acceptance on macOS, Linux, Android and
 iOS remain release gates. Active timer reservations on the server are not yet
 implemented. Do not retire the existing scheduler based only on compilation or
 unit tests.
+
+Interstice task cards also show the work-area list, one of nine action categories,
+an optional person and communication mode, and topic tags. Search by person,
+list or topic, or filter by task category. These fields survive offline cache
+reloads. The timer category remains independent. Edit task details in the
+Interstice web workspace; native metadata editing is not yet included.

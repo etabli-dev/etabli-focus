@@ -89,7 +89,10 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
                 _status.update { it.copy(tasks = (0 until cached.length()).map { index ->
                     val row = cached.getJSONObject(index)
                     FlowTask(row.getString("id"), row.getString("title"), scheduled = row.stringOrNull("scheduled"),
-                        progress = row.getInt("progress"), duration = row.getInt("minutes"), credentialBinding = binding(), provider = "interstice")
+                        progress = row.getInt("progress"), duration = row.getInt("minutes"), credentialBinding = binding(), provider = "interstice",
+                        workList = row.optString("list", ""), category = row.optString("category", "other"),
+                        person = row.optString("person", ""), communicationMode = row.optString("communication_mode", ""),
+                        tags = row.topicTags())
                 }, syncedAt = ledger.stringOrNull("cachedAt"), message = "Cached tasks may be stale; refresh when connected.") }
             }
             if (connection != null) { syncLocked(); loadLocked() }
@@ -179,7 +182,12 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
     }
     private suspend fun loadLocked() {
         val rows = request("GET", "/tasks").getJSONArray("tasks")
-        val plan = request("GET", "/schedule")
+        var scheduleUnavailable = false
+        val plan = try { request("GET", "/schedule") } catch (error: IntersticeHTTPError) {
+            if (error.status != 503) throw error
+            scheduleUnavailable = true
+            JSONObject().put("blocks", JSONArray()).put("calendar_inputs_ready", false)
+        }
         val blocks = plan.getJSONArray("blocks")
         val starts = mutableMapOf<String, String>()
         for (i in 0 until blocks.length()) {
@@ -188,16 +196,19 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
         }
         val tasks = (0 until rows.length()).map { rows.getJSONObject(it) }.filter { !it.getBoolean("completed") }.map {
             FlowTask(it.getString("id"), it.getString("title"), scheduled = starts[it.getString("id")],
-                progress = it.getInt("progress"), duration = it.getInt("minutes"), credentialBinding = binding(), provider = "interstice")
+                progress = it.getInt("progress"), duration = it.getInt("minutes"), credentialBinding = binding(), provider = "interstice",
+                workList = it.optString("list", ""), category = it.optString("category", "other"),
+                person = it.optString("person", ""), communicationMode = it.optString("communication_mode", ""), tags = it.topicTags())
         }.sortedWith(compareBy<FlowTask> { it.scheduled == null }.thenBy { it.scheduled }.thenBy { it.title })
         val ledger = ledgerStore.read()
         val syncedAt = java.time.Instant.now().toString()
         ledger.put("cacheBinding", binding()).put("cachedAt", syncedAt).put("cachedTasks", JSONArray().apply {
             tasks.forEach { put(JSONObject().put("id", it.id).put("title", it.title).put("scheduled", it.scheduled ?: JSONObject.NULL)
-                .put("progress", it.progress).put("minutes", it.duration)) }
+                .put("progress", it.progress).put("minutes", it.duration).put("list",it.workList).put("category",it.category)
+                .put("person",it.person).put("communication_mode",it.communicationMode).put("tags",JSONArray(it.tags))) }
         })
         ledgerStore.write(ledger)
-        _status.update { it.copy(tasks = tasks, syncedAt = syncedAt, message = if (!plan.optBoolean("calendar_inputs_ready")) "Calendar data is stale or incomplete; check the schedule before relying on it." else it.message) }
+        _status.update { it.copy(tasks = tasks, syncedAt = syncedAt, message = if (scheduleUnavailable) "Schedule unavailable; task details are current but no planned times are shown." else if (!plan.optBoolean("calendar_inputs_ready")) "Calendar data is stale or incomplete; check the schedule before relying on it." else it.message) }
     }
     companion object { const val PREFIX = "interstice:v1:" }
 }
@@ -206,3 +217,11 @@ fun taskSessionNote(link: String): String {
     val prefix = if (runCatching { JSONObject(link).optString("provider") }.getOrNull() == "interstice") Interstice.PREFIX else FlowSavvy.NOTE_PREFIX
     return prefix + link
 }
+
+internal fun JSONObject.topicTags(): List<String> = optJSONArray("tags")?.let { array -> (0 until array.length()).map { array.getString(it) } } ?: emptyList()
+val intersticeCategories = linkedMapOf("discussion" to "Discussion", "writing" to "Writing & review", "research" to "Research & analysis",
+    "software" to "Software & systems", "administration" to "Administration & planning", "security" to "Security & accounts",
+    "learning" to "Learning & teaching", "practical" to "Errands & practical work", "other" to "Other")
+fun FlowTask.contextLabel(): String = listOf(workList, intersticeCategories[category] ?: "Other", person,
+    mapOf("meeting" to "Meeting", "phone" to "Phone call", "email" to "Email", "video" to "Video call", "message" to "Message")[communicationMode].orEmpty(),
+    tags.joinToString(" ") { "#$it" }).filter { it.isNotBlank() }.joinToString(" · ")
