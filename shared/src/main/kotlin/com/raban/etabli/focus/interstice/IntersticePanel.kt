@@ -5,6 +5,8 @@ package com.raban.etabli.focus.interstice
 import com.raban.etabli.focus.flowsavvy.FlowTask
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -26,6 +28,7 @@ fun IntersticePanel(service: Interstice, categories: List<CategoryEntity>, timer
     var taskQuery by remember { mutableStateOf("") }
     var taskCategory by remember { mutableStateOf("") }
     var showTaskCategories by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<FlowTask?>(null) }
     var confirmation by remember { mutableStateOf<FlowTask?>(null) }
     val category = categories.firstOrNull { it.id == categoryID } ?: categories.firstOrNull()
     LaunchedEffect(Unit) { service.refresh() }
@@ -84,6 +87,7 @@ fun IntersticePanel(service: Interstice, categories: List<CategoryEntity>, timer
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(task.title, style = MaterialTheme.typography.titleMedium)
                     Text(task.contextLabel(), style = MaterialTheme.typography.bodySmall)
+                    TextButton(enabled = !status.busy, onClick = { editing = task }) { Text("Edit details") }
                     task.scheduled?.let { Text(it.replace('T', ' '), style = MaterialTheme.typography.bodySmall) }
                     Text("${task.progress} min reported" + (task.duration?.let { " · $it min planned" } ?: ""), style = MaterialTheme.typography.bodySmall)
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -97,10 +101,54 @@ fun IntersticePanel(service: Interstice, categories: List<CategoryEntity>, timer
             }
         }
     }
+    editing?.let { task ->
+        IntersticeDetailsEditor(task, status.busy, status.message, { editing = null }) { details ->
+            service.saveDetails(task, details) { editing = null }
+        }
+    }
     confirmation?.let { task ->
         AlertDialog(onDismissRequest = { confirmation = null }, title = { Text("Complete task?") },
             text = { Text("Mark “${task.title}” as completed in Interstice? Unsent focus time will be synced first.") },
             confirmButton = { TextButton(onClick = { service.complete(task); confirmation = null }) { Text("Mark complete") } },
             dismissButton = { TextButton(onClick = { confirmation = null }) { Text("Keep open") } })
     }
+}
+
+@Composable
+private fun DetailChoice(label: String, value: String, choices: Map<String,String>, enabled: Boolean, changed: (String)->Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton(enabled = enabled, onClick = { expanded = true }) { Text("$label: ${choices[value] ?: value}") }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            choices.forEach { (key,text) -> DropdownMenuItem(text = { Text(text) }, onClick = { changed(key); expanded = false }) }
+        }
+    }
+}
+
+@Composable
+private fun IntersticeDetailsEditor(task: FlowTask, busy: Boolean, message: String?, close: ()->Unit, save: (IntersticeDetails)->Unit) {
+    var workList by remember(task.identity) { mutableStateOf(task.workList) }
+    var category by remember(task.identity) { mutableStateOf(task.category) }
+    var person by remember(task.identity) { mutableStateOf(task.person) }
+    var mode by remember(task.identity) { mutableStateOf(task.communicationMode) }
+    var topics by remember(task.identity) { mutableStateOf(task.tags.joinToString(", ")) }
+    val details = IntersticeDetails(workList, category, person, mode, topics)
+    val valid = runCatching { details.body() }.isSuccess
+    AlertDialog(onDismissRequest = { if(!busy) close() }, title = { Text("Edit task details") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(task.title)
+                OutlinedTextField(value = workList, onValueChange = { workList = it }, enabled = !busy, label = { Text("List · work area") }, singleLine = true)
+                DetailChoice("Suggested lists", workList, intersticeLists.associateWith { it }, !busy) { workList = it }
+                DetailChoice("Category", category, intersticeCategories, !busy) { category = it }
+                OutlinedTextField(value = person, onValueChange = { person = it }, enabled = !busy, label = { Text("Person (optional)") })
+                DetailChoice("Communication mode", mode, intersticeModes, !busy) { mode = it }
+                OutlinedTextField(value = topics, onValueChange = { topics = it }, enabled = !busy, label = { Text("Topic tags · comma separated") })
+                Text("Saved edits retry when connected. Closing after a network error keeps the pending save on this device.")
+                if(!valid) Text("Check list length (1–100), person (up to 200), and tags (up to 20, 80 characters each).")
+                message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            }
+        },
+        confirmButton = { TextButton(enabled = !busy && valid, onClick = { save(details) }) { Text(if(busy) "Saving…" else "Save / retry") } },
+        dismissButton = { TextButton(enabled = !busy, onClick = close) { Text("Close") } })
 }

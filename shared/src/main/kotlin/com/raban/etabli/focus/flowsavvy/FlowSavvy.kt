@@ -23,7 +23,7 @@ data class FlowTask(val id: String, val title: String, val occurrence: String? =
                     val scheduled: String? = null, val progress: Int = 0, val duration: Int? = null,
                     val credentialBinding: String? = null, val provider: String = "flowsavvy",
                     val workList: String = "", val category: String = "other", val person: String = "",
-                    val communicationMode: String = "", val tags: List<String> = emptyList()) {
+                    val communicationMode: String = "", val tags: List<String> = emptyList(), val revision: Int? = null) {
     fun link(binding: String) = JSONObject().put("v", 1).put("binding", binding).put("id", id)
         .put("title", title).put("occurrence", occurrence ?: JSONObject.NULL).put("provider", provider).toString()
     val identity: String get() = "$id|${occurrence.orEmpty()}"

@@ -66,7 +66,7 @@ final class IntersticeStore {
     func refresh() async {
         guard !busy, connection != nil, file != nil else { return }
         busy = true; defer { busy = false }
-        do { try await finishCompletion(); try await load() }
+        do { try await finishEdit(); try await finishCompletion(); try await load() }
         catch { message = error.localizedDescription }
     }
     func sync(_ records: [FlowWorkRecord]) async {
@@ -77,6 +77,7 @@ final class IntersticeStore {
     }
     private func synchronize(_ records: [FlowWorkRecord]) async throws {
         guard let connection else { return }
+        try await finishEdit()
         try await finishCompletion()
         let unique = Dictionary(records.map { ($0.sessionID, $0) }, uniquingKeysWith: { a, _ in a })
         let groups = Dictionary(grouping: unique.values.filter { $0.link.provider == "interstice" }, by: { $0.link.ledgerID })
@@ -117,6 +118,42 @@ final class IntersticeStore {
             try await load()
         } catch { message = error.localizedDescription }
     }
+    func saveDetails(_ task: FlowTask, details: IntersticeDetails) async -> Bool {
+        guard !busy, let connection, file != nil else { return false }
+        busy = true; message = nil; defer { busy = false }
+        do {
+            guard task.link.provider == "interstice", task.link.credentialID == connection.binding,
+                  task.link.installationID == ledger.installationID, let revision = task.revision else {
+                throw FlowSavvyError(message: "Refresh and select this task again before editing.")
+            }
+            _ = try details.body()
+            if let pending = ledger.edit {
+                guard pending.taskID == task.link.taskID, pending.details == details else {
+                    throw FlowSavvyError(message: "An earlier edit is waiting to sync. Close this editor and refresh first.")
+                }
+            } else {
+                ledger.edit = IntersticeEdit(binding: connection.binding, taskID: task.link.taskID,
+                    revision: revision, key: UUID().uuidString, details: details)
+                try save()
+            }
+            try await finishEdit()
+        } catch { message = error.localizedDescription; return false }
+        do { try await load() } catch { message = "Edit saved. Task refresh failed; refresh when connected." }
+        return true
+    }
+    private func finishEdit() async throws {
+        guard let intent = ledger.edit, let connection else { return }
+        guard intent.binding == connection.binding else { throw FlowSavvyError(message: "Pending edit belongs to another connection. Reconnect it to sync.") }
+        try save()
+        do {
+            _ = try await client.request("PATCH", "/api/v1/tasks/\(IntersticeClient.component(intent.taskID))", connection: connection,
+                body: intent.details.body(), headers: ["Idempotency-Key": intent.key, "If-Match": String(intent.revision)])
+        } catch let error as IntersticeHTTPError where [404,409,422].contains(error.status) {
+            ledger.edit = nil; try save()
+            throw FlowSavvyError(message: error.status == 409 ? "Task changed. Close the editor, refresh and review your edit again." : "Edit rejected. Close the editor and refresh the task before trying again.")
+        }
+        ledger.edit = nil; try save()
+    }
     private func finishCompletion() async throws {
         guard let intent = ledger.completion, let connection else { return }
         guard intent.binding == connection.binding else { throw FlowSavvyError(message: "Pending completion belongs to another connection.") }
@@ -149,7 +186,7 @@ final class IntersticeStore {
                 installationID: ledger.installationID, provider: "interstice")
             return FlowTask(link: link, progressMinutes: row["progress"]?.int, durationMinutes: row["minutes"]?.int, scheduledStart: starts[id], workList: row["list"]?.string,
                 category: row["category"]?.string, person: row["person"]?.string,
-                communicationMode: row["communication_mode"]?.string, tags: row["tags"]?.array.compactMap(\.string))
+                communicationMode: row["communication_mode"]?.string, tags: row["tags"]?.array.compactMap(\.string), revision: row["revision"]?.int)
         }.sorted { ($0.scheduledStart ?? "~", $0.title) < ($1.scheduledStart ?? "~", $1.title) }
         lastSynced = Date(); ledger.cachedAt = lastSynced
         ledger.cachedTasks = tasks; ledger.cacheBinding = connection.binding; try save()

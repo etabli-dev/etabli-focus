@@ -13,8 +13,9 @@ import kotlin.test.*
 class IntersticeTest {
     class Ledger : LedgerStore {
         var value = JSONObject()
+        var failWrites = false
         override fun read() = JSONObject(value.toString())
-        override fun write(value: JSONObject) { this.value = JSONObject(value.toString()) }
+        override fun write(value: JSONObject) { check(!failWrites); this.value = JSONObject(value.toString()) }
     }
     class Vault : KeyVault {
         var value: String? = null
@@ -30,6 +31,9 @@ class IntersticeTest {
         var loseResponse = false
         var mode = "test"
         var offline = false
+        var revision = 1
+        var metadata = JSONObject().put("list","Forschung").put("category","discussion").put("person","Alex").put("communication_mode","phone").put("tags",JSONArray().put("budget"))
+        var edits = 0
         var completionConflict = false
         var scheduleUnavailable = false
         override suspend fun request(connection: IntersticeConnection, method: String, path: String, body: JSONObject?, headers: Map<String,String>): JSONObject {
@@ -38,9 +42,13 @@ class IntersticeTest {
             if (path.endsWith("/status")) return JSONObject().put("role","admin").put("mode",mode)
             if (path.endsWith("/schedule") && scheduleUnavailable) throw IntersticeHTTPError(503)
             if (path.endsWith("/schedule")) return JSONObject().put("blocks",JSONArray()).put("calendar_inputs_ready",true)
-            if (method == "GET") return JSONObject().put("tasks",JSONArray().put(JSONObject().put("id","one").put("title","Task").put("minutes",60).put("progress",progress).put("completed",complete).put("revision",1).put("list","Forschung").put("category","discussion").put("person","Alex").put("communication_mode","phone").put("tags",JSONArray().put("budget"))))
+            if (method == "GET") return JSONObject().put("tasks",JSONArray().put(JSONObject(metadata.toString()).put("id","one").put("title","Task").put("minutes",60).put("progress",progress).put("completed",complete).put("revision",revision)))
             val key = headers.getValue("Idempotency-Key")
             if (receipts.containsKey(key)) return receipts.getValue(key)
+            if (method == "PATCH") {
+                if(headers["If-Match"] != revision.toString()) throw IntersticeHTTPError(409)
+                metadata = JSONObject(body.toString()); revision++; edits++
+            }
             if (path.endsWith("/complete") && completionConflict) throw IntersticeHTTPError(409)
             if (path.endsWith("/progress")) progress = body!!.getLong("minutes")
             if (path.endsWith("/complete")) complete = true
@@ -143,6 +151,56 @@ class IntersticeTest {
                 assertEquals(task, restarted.status.value.tasks.single())
             } finally { restartedScope.cancel() }
         }
+    }
+
+    private fun details() = IntersticeDetails("Lehre", "discussion", "Sam", "email", "course, budget")
+    @Test fun editResponseLossReplaysPersistedIntentAfterRestart() = runBlocking {
+        Fixture().use { f ->
+            f.connect(); val task=f.service.status.value.tasks.single();f.remote.loseResponse=true
+            var saved=false;f.service.saveDetails(task,details()) { saved=true }.join()
+            assertFalse(saved);assertTrue(f.ledger.value.has("edit"));assertEquals(2,f.remote.revision)
+            val scope=CoroutineScope(SupervisorJob()+Dispatchers.Unconfined)
+            try {
+                val restarted=Interstice(f.vault,f.ledger,f.history,scope,f.remote)
+                assertFalse(f.ledger.value.has("edit"));assertEquals(1,f.remote.edits)
+                assertEquals("Sam",restarted.status.value.tasks.single().person)
+                assertEquals(2,restarted.status.value.tasks.single().revision)
+            } finally { scope.cancel() }
+        }
+    }
+    @Test fun staleEditorCannotOverwriteNewerMetadata() = runBlocking {
+        Fixture().use { f ->
+            f.connect();val task=f.service.status.value.tasks.single();f.remote.revision=2
+            var saved=false;f.service.saveDetails(task,details()) { saved=true }.join()
+            assertFalse(saved);assertFalse(f.ledger.value.has("edit"));assertEquals("Alex",f.remote.metadata.getString("person"))
+            assertContains(f.service.status.value.message.orEmpty(),"Task changed")
+            f.service.refresh().join();f.service.saveDetails(f.service.status.value.tasks.single(),details()) { saved=true }.join()
+            assertTrue(saved);assertEquals("Lehre",f.service.status.value.tasks.single().workList)
+        }
+    }
+    @Test fun failedPersistencePreventsEditAndPendingEditsStayWithTheirConnection() = runBlocking {
+        Fixture().use { f ->
+            f.connect();val task=f.service.status.value.tasks.single();f.ledger.failWrites=true
+            f.service.saveDetails(task,details()) {}.join();assertEquals(0,f.remote.edits)
+            f.ledger.failWrites=false;f.remote.offline=true
+            f.service.saveDetails(task,details()) {}.join();assertTrue(f.ledger.value.has("edit"))
+            f.remote.offline=false;f.service.connect("https://tasks.example/another","another-key").join()
+            assertEquals(0,f.remote.edits);assertTrue(f.ledger.value.has("edit"))
+            f.service.connect("https://tasks.example/workspace","test-key").join()
+            assertEquals("Sam",f.remote.metadata.getString("person"));assertFalse(f.ledger.value.has("edit"))
+        }
+    }
+    @Test fun transportSendsPatchWithBoundedDetailsAndRevision() = runBlocking {
+        val client=okhttp3.OkHttpClient.Builder().addInterceptor { chain ->
+            val request=chain.request()
+            assertEquals("PATCH",request.method);assertEquals("7",request.header("If-Match"));assertEquals("receipt",request.header("Idempotency-Key"))
+            val buffer=okio.Buffer();request.body!!.writeTo(buffer)
+            assertEquals("Sam",JSONObject(buffer.readUtf8()).getString("person"))
+            okhttp3.Response.Builder().request(request).protocol(okhttp3.Protocol.HTTP_1_1).code(200).message("OK")
+                .body(okhttp3.ResponseBody.create(null,"{}")).build()
+        }.build()
+        IntersticeHttp(client).request(IntersticeConnection.checked("https://tasks.example","key"),"PATCH","/api/v1/tasks/one",details().body(),mapOf("If-Match" to "7","Idempotency-Key" to "receipt"))
+        assertFails { details().copy(category="tenth").body() };assertFails { details().copy(person="x".repeat(201)).body() };Unit
     }
 
 }

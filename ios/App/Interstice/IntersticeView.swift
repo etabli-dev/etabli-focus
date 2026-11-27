@@ -22,6 +22,7 @@ struct IntersticeView: View {
     @State private var categoryID: UUID?
     @State private var minutes = 25
     @State private var confirming: FlowTask?
+    @State private var editing: FlowTask?
     @State private var taskQuery = ""
     @State private var taskCategory = ""
     private var category: Category? { categories.first { $0.id == categoryID } ?? categories.first }
@@ -72,6 +73,7 @@ struct IntersticeView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(task.title).font(.headline)
                                 Text(task.contextLabel).font(.caption)
+                                Button("Edit details") { editing = task }.disabled(store.busy).buttonStyle(.borderless)
                                 if let scheduled = task.scheduledStart { Text(scheduled.replacingOccurrences(of: "T", with: " · ")).font(.caption) }
                                 if let progress = task.progressMinutes, let planned = task.durationMinutes {
                                     Text("\(progress) min recorded / \(planned) min planned").font(.caption)
@@ -96,6 +98,9 @@ struct IntersticeView: View {
             .navigationTitle("Interstice")
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
             .task { if store.connected { await store.refresh() }; if categoryID == nil { categoryID = categories.first?.id } }
+            .sheet(item: $editing) { task in
+                IntersticeDetailsEditor(task: task)
+            }
             .confirmationDialog("Mark this task complete in Interstice?", isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }), titleVisibility: .visible) {
                 if let task = confirming {
                     Button("Complete task") {
@@ -105,6 +110,53 @@ struct IntersticeView: View {
                     Button("Cancel", role: .cancel) { confirming = nil }
                 }
             } message: { Text(confirming?.title ?? "") }
+        }
+    }
+}
+
+private struct IntersticeDetailsEditor: View {
+    @Environment(IntersticeStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    let task: FlowTask
+    @State private var details: IntersticeDetails
+    init(task: FlowTask) {
+        self.task = task
+        _details = State(initialValue: IntersticeDetails(workList: task.workList ?? "", category: task.category ?? "other",
+            person: task.person ?? "", mode: task.communicationMode ?? "", topics: (task.tags ?? []).joined(separator: ", ")))
+    }
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(task.title) {
+                    TextField("List · work area", text: $details.workList)
+                    Menu("Suggested lists") {
+                        ForEach(intersticeLists, id: \.self) { name in Button(name) { details.workList = name } }
+                    }
+                    Picker("Category", selection: $details.category) {
+                        ForEach(intersticeCategories, id: \.0) { item in Text(item.1).tag(item.0) }
+                    }
+                    TextField("Person (optional)", text: $details.person)
+                    Picker("Communication mode", selection: $details.mode) {
+                        ForEach(intersticeModes, id: \.0) { item in Text(item.1).tag(item.0) }
+                    }
+                    TextField("Topic tags · comma separated", text: $details.topics, axis: .vertical)
+                }.disabled(store.busy)
+                Section {
+                    Text("Saved edits retry when connected. Closing after a network error keeps the pending save on this device.")
+                    if let message = store.message { Text(message).foregroundStyle(.secondary) }
+                    if (try? details.body()) == nil { Text("Check list (1–100 characters), person (up to 200), and tags (up to 20, 80 characters each).") }
+                }
+            }
+            .navigationTitle("Edit task details")
+            .interactiveDismissDisabled(store.busy)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() }.disabled(store.busy) }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(store.busy ? "Saving…" : "Save / retry") {
+                        Task { if await store.saveDetails(task, details: details) { dismiss() } }
+                    }.disabled(store.busy || (try? details.body()) == nil)
+                }
+            }
         }
     }
 }

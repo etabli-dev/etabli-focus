@@ -63,6 +63,7 @@ struct FlowTask: Identifiable, Equatable, Codable, Sendable {
     var person: String? = nil
     var communicationMode: String? = nil
     var tags: [String]? = nil
+    var revision: Int? = nil
     var id: String { link.ledgerID }
     var title: String { link.title }
 }

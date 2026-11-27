@@ -122,5 +122,9 @@ unit tests.
 Interstice task cards also show the work-area list, one of nine action categories,
 an optional person and communication mode, and topic tags. Search by person,
 list or topic, or filter by task category. These fields survive offline cache
-reloads. The timer category remains independent. Edit task details in the
-Interstice web workspace; native metadata editing is not yet included.
+reloads. The timer category remains independent. Choose **Edit details** on a task
+to change its list, category, person, communication mode or topic tags directly
+in Focus. Saves persist before sending and retry with the same receipt; newer
+server revisions require refreshing and reviewing the edit again. Pending edits
+stay bound to their original connection. Editing requires a writable installation;
+read-only shadow mode remains protected.

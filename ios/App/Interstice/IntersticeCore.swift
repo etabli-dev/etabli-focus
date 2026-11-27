@@ -72,6 +72,7 @@ struct IntersticeLedger: Codable {
     var installationID = UUID().uuidString
     var receipts: [String: Int] = [:]
     var completion: IntersticeCompletion?
+    var edit: IntersticeEdit?
     var cachedTasks: [FlowTask] = []
     var cacheBinding: String?
     var cachedAt: Date?
@@ -86,4 +87,34 @@ extension FlowTask {
         return [workList, intersticeCategories.first { $0.0 == (category ?? "other") }?.1 ?? "Other", person, mode,
             tags?.map { "#" + $0 }.joined(separator: " ")].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
     }
+}
+
+let intersticeLists = ["Lehre", "Klinik", "Forschung", "Ausbildung", "Firma", "Bw", "Privat"]
+let intersticeModes = [("", "Not specified"), ("meeting", "Meeting"), ("phone", "Phone call"), ("email", "Email"), ("video", "Video call"), ("message", "Message")]
+struct IntersticeDetails: Codable, Equatable, Sendable {
+    var workList: String
+    var category: String
+    var person: String
+    var mode: String
+    var topics: String
+    func body() throws -> [String: FlowJSON] {
+        let list = workList.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = person.trimmingCharacters(in: .whitespacesAndNewlines)
+        var seen = Set<String>()
+        let tags = topics.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && seen.insert($0.lowercased()).inserted }
+        guard !list.isEmpty, list.count <= 100, name.count <= 200, tags.count <= 20, tags.allSatisfy({ $0.count <= 80 }),
+              intersticeCategories.contains(where: { $0.0 == category }), intersticeModes.contains(where: { $0.0 == mode }) else {
+            throw FlowSavvyError(message: "Check list (1–100 characters), person (up to 200), category, mode and tags (up to 20, 80 characters each).")
+        }
+        return ["list": .string(list), "category": .string(category), "person": .string(name),
+                "communication_mode": .string(mode), "tags": .array(tags.map { .string($0) })]
+    }
+}
+struct IntersticeEdit: Codable {
+    let binding: String
+    let taskID: String
+    let revision: Int
+    let key: String
+    let details: IntersticeDetails
 }

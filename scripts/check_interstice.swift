@@ -33,6 +33,19 @@ import Foundation
         let restored = try JSONDecoder().decode(FlowTask.self, from: JSONEncoder().encode(tagged))
         precondition(restored == tagged && restored.contextLabel.contains("Alex") && restored.contextLabel.contains("Phone call"))
         precondition(intersticeCategories.count == 9)
+        let details = IntersticeDetails(workList: "Lehre", category: "discussion", person: "Sam", mode: "email", topics: "course, budget")
+        var ledger = IntersticeLedger()
+        ledger.edit = IntersticeEdit(binding: connection.binding, taskID: "one", revision: 7, key: "edit-key", details: details)
+        let persisted = try JSONDecoder().decode(IntersticeLedger.self, from: JSONEncoder().encode(ledger))
+        precondition(persisted.edit?.details == details && persisted.edit?.revision == 7)
+        let editor = IntersticeClient { request in
+            precondition(request.httpMethod == "PATCH" && request.value(forHTTPHeaderField: "If-Match") == "7")
+            precondition(request.value(forHTTPHeaderField: "Idempotency-Key") == "edit-key")
+            let body = try JSONDecoder().decode(FlowJSON.self, from: request.httpBody!).object
+            precondition(body["person"]?.string == "Sam" && body["list"]?.string == "Lehre")
+            return (Data("{}".utf8), 200)
+        }
+        _ = try await editor.request("PATCH", "/api/v1/tasks/one", connection: connection, body: details.body(), headers: ["If-Match":"7", "Idempotency-Key":"edit-key"])
         print("Interstice client contract checks passed")
     }
 }

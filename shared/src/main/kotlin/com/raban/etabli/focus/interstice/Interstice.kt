@@ -10,7 +10,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
-import java.net.HttpURLConnection
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.TimeUnit
 import java.net.URI
 import java.util.UUID
 
@@ -33,25 +37,19 @@ fun interface IntersticeTransport {
 
 class IntersticeHTTPError(val status: Int) : IllegalStateException("Interstice request failed ($status). Saved work remains on this device.")
 
-class IntersticeHttp : IntersticeTransport {
+class IntersticeHttp(private val client: OkHttpClient = OkHttpClient.Builder()
+    .followRedirects(false).followSslRedirects(false).connectTimeout(15, TimeUnit.SECONDS)
+    .readTimeout(90, TimeUnit.SECONDS).callTimeout(100, TimeUnit.SECONDS).build()) : IntersticeTransport {
     override suspend fun request(connection: IntersticeConnection, method: String, path: String, body: JSONObject?, headers: Map<String, String>): JSONObject = withContext(Dispatchers.IO) {
         require(path.startsWith("/api/v1/") && !path.contains(".."))
-        val http = URI(connection.origin + path).toURL().openConnection() as HttpURLConnection
-        try {
-            http.requestMethod = method; http.instanceFollowRedirects = false
-            http.connectTimeout = 15000; http.readTimeout = 90000
-            http.setRequestProperty("Authorization", "Bearer ${connection.token}")
-            http.setRequestProperty("Accept", "application/json")
-            headers.forEach { (key, value) -> http.setRequestProperty(key, value) }
-            if (body != null) {
-                http.doOutput = true; http.setRequestProperty("Content-Type", "application/json")
-                http.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-            }
-            val status = http.responseCode
-            if (status !in 200..299) throw IntersticeHTTPError(status)
-            val bytes = http.inputStream.use { stream ->
-                val result = java.io.ByteArrayOutputStream()
-                val buffer = ByteArray(8192)
+        val request = Request.Builder().url(connection.origin + path)
+            .header("Authorization", "Bearer ${connection.token}").header("Accept", "application/json")
+            .method(method, body?.toString()?.toRequestBody("application/json".toMediaType()))
+        headers.forEach { (key, value) -> request.header(key, value) }
+        client.newCall(request.build()).execute().use { response ->
+            if (!response.isSuccessful) throw IntersticeHTTPError(response.code)
+            val bytes = requireNotNull(response.body).byteStream().use { stream ->
+                val result = java.io.ByteArrayOutputStream(); val buffer = ByteArray(8192)
                 while (true) {
                     val count = stream.read(buffer); if (count < 0) break
                     check(result.size() + count <= 16_000_000) { "Interstice response is too large." }
@@ -60,7 +58,7 @@ class IntersticeHttp : IntersticeTransport {
                 result.toByteArray()
             }
             JSONObject(String(bytes, Charsets.UTF_8))
-        } finally { http.disconnect() }
+        }
     }
 }
 
@@ -92,7 +90,7 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
                         progress = row.getInt("progress"), duration = row.getInt("minutes"), credentialBinding = binding(), provider = "interstice",
                         workList = row.optString("list", ""), category = row.optString("category", "other"),
                         person = row.optString("person", ""), communicationMode = row.optString("communication_mode", ""),
-                        tags = row.topicTags())
+                        tags = row.topicTags(), revision = if(row.has("revision")) row.getInt("revision") else null)
                 }, syncedAt = ledger.stringOrNull("cachedAt"), message = "Cached tasks may be stale; refresh when connected.") }
             }
             if (connection != null) { syncLocked(); loadLocked() }
@@ -130,6 +128,36 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
         }
         loadLocked()
     } }
+    fun saveDetails(task: FlowTask, details: IntersticeDetails, saved: () -> Unit) = scope.launch { action {
+        check(task.provider == "interstice" && task.credentialBinding == binding()) { "Connection changed; select the task again." }
+        val revision = requireNotNull(task.revision) { "Refresh this task before editing." }
+        val body = details.body()
+        val ledger = ledgerStore.read()
+        val pending = ledger.optJSONObject("edit")
+        if (pending != null) {
+            check(pending.getString("id") == task.id && pending.getJSONObject("body").similar(body)) {
+                "An earlier edit is waiting to sync. Close this editor and use Refresh / retry sync first."
+            }
+        } else {
+            ledger.put("edit", JSONObject().put("binding", binding()).put("id",task.id).put("revision",revision)
+                .put("body",body).put("key",UUID.randomUUID().toString()))
+            ledgerStore.write(ledger)
+        }
+        finishEdit(ledger); saved(); loadLocked()
+    } }
+    private suspend fun finishEdit(ledger: JSONObject) {
+        val intent = ledger.optJSONObject("edit") ?: return
+        check(intent.getString("binding") == binding()) { "Pending edit belongs to another connection. Reconnect it to sync." }
+        try {
+            request("PATCH", "/tasks/${FlowSavvy.encode(intent.getString("id"))}", intent.getJSONObject("body"),
+                mapOf("Idempotency-Key" to intent.getString("key"), "If-Match" to intent.getInt("revision").toString()))
+        } catch (error: IntersticeHTTPError) {
+            if(error.status !in listOf(404,409,422)) throw error
+            ledger.remove("edit"); ledgerStore.write(ledger)
+            throw IllegalStateException(if(error.status==409) "Task changed. Close the editor, refresh and review your edit again." else "Edit rejected. Close the editor and refresh the task before trying again.")
+        }
+        ledger.remove("edit"); ledgerStore.write(ledger)
+    }
     private suspend fun request(method: String, path: String, body: JSONObject? = null, headers: Map<String, String> = emptyMap()) =
         transport.request(requireNotNull(connection), method, "/api/v1$path", body, headers)
     private suspend fun action(block: suspend () -> Unit) = mutex.withLock {
@@ -155,6 +183,7 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
     private suspend fun syncLocked() {
         val ledger = ledgerStore.read()
         // Replay the exact completion request first; an accepted response may have been lost.
+        finishEdit(ledger)
         finishCompletion(ledger)
         val receipts = ledger.optJSONObject("receipts") ?: JSONObject().also { ledger.put("receipts", it) }
         var foreign = false
@@ -198,14 +227,14 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
             FlowTask(it.getString("id"), it.getString("title"), scheduled = starts[it.getString("id")],
                 progress = it.getInt("progress"), duration = it.getInt("minutes"), credentialBinding = binding(), provider = "interstice",
                 workList = it.optString("list", ""), category = it.optString("category", "other"),
-                person = it.optString("person", ""), communicationMode = it.optString("communication_mode", ""), tags = it.topicTags())
+                person = it.optString("person", ""), communicationMode = it.optString("communication_mode", ""), tags = it.topicTags(), revision = it.getInt("revision"))
         }.sortedWith(compareBy<FlowTask> { it.scheduled == null }.thenBy { it.scheduled }.thenBy { it.title })
         val ledger = ledgerStore.read()
         val syncedAt = java.time.Instant.now().toString()
         ledger.put("cacheBinding", binding()).put("cachedAt", syncedAt).put("cachedTasks", JSONArray().apply {
             tasks.forEach { put(JSONObject().put("id", it.id).put("title", it.title).put("scheduled", it.scheduled ?: JSONObject.NULL)
                 .put("progress", it.progress).put("minutes", it.duration).put("list",it.workList).put("category",it.category)
-                .put("person",it.person).put("communication_mode",it.communicationMode).put("tags",JSONArray(it.tags))) }
+                .put("person",it.person).put("communication_mode",it.communicationMode).put("tags",JSONArray(it.tags)).put("revision",it.revision)) }
         })
         ledgerStore.write(ledger)
         _status.update { it.copy(tasks = tasks, syncedAt = syncedAt, message = if (scheduleUnavailable) "Schedule unavailable; task details are current but no planned times are shown." else if (!plan.optBoolean("calendar_inputs_ready")) "Calendar data is stale or incomplete; check the schedule before relying on it." else it.message) }
@@ -225,3 +254,16 @@ val intersticeCategories = linkedMapOf("discussion" to "Discussion", "writing" t
 fun FlowTask.contextLabel(): String = listOf(workList, intersticeCategories[category] ?: "Other", person,
     mapOf("meeting" to "Meeting", "phone" to "Phone call", "email" to "Email", "video" to "Video call", "message" to "Message")[communicationMode].orEmpty(),
     tags.joinToString(" ") { "#$it" }).filter { it.isNotBlank() }.joinToString(" · ")
+
+val intersticeLists = listOf("Lehre", "Klinik", "Forschung", "Ausbildung", "Firma", "Bw", "Privat")
+val intersticeModes = linkedMapOf("" to "Not specified", "meeting" to "Meeting", "phone" to "Phone call", "email" to "Email", "video" to "Video call", "message" to "Message")
+data class IntersticeDetails(val workList: String, val category: String, val person: String, val mode: String, val topics: String) {
+    fun body(): JSONObject {
+        val tags = topics.split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinctBy { it.lowercase() }
+        require(workList.trim().isNotEmpty() && workList.trim().length <= 100) { "Enter a list name of 1–100 characters." }
+        require(category in intersticeCategories && mode in intersticeModes) { "Choose a category and communication mode." }
+        require(person.trim().length <= 200 && tags.size <= 20 && tags.all { it.length <= 80 }) { "Use up to 200 characters for a person and 20 topic tags of up to 80 characters each." }
+        return JSONObject().put("list",workList.trim()).put("category",category).put("person",person.trim())
+            .put("communication_mode",mode).put("tags",JSONArray(tags))
+    }
+}
