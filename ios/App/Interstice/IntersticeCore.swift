@@ -22,6 +22,11 @@ private final class IntersticeHTTPSDelegate: NSObject, URLSessionTaskDelegate {
                     newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
 }
 
+struct IntersticeHTTPError: LocalizedError, Sendable {
+    let status: Int
+    var errorDescription: String? { "Interstice request failed (\(status)). Saved work remains on this device." }
+}
+
 struct IntersticeClient: Sendable {
     typealias Transport = @Sendable (URLRequest) async throws -> (Data, Int)
     private static let session: URLSession = {
@@ -48,9 +53,8 @@ struct IntersticeClient: Sendable {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
         let (data, status) = try await transport(request)
-        guard (200..<300).contains(status), data.count <= 16_000_000 else {
-            throw FlowSavvyError(message: "Interstice request failed (\(status)). Saved work remains on this device.")
-        }
+        guard (200..<300).contains(status) else { throw IntersticeHTTPError(status: status) }
+        guard data.count <= 16_000_000 else { throw FlowSavvyError(message: "Interstice response is too large.") }
         return try JSONDecoder().decode(FlowJSON.self, from: data).object
     }
     static func component(_ value: String) -> String {

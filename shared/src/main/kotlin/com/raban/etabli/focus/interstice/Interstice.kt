@@ -31,6 +31,8 @@ fun interface IntersticeTransport {
     suspend fun request(connection: IntersticeConnection, method: String, path: String, body: JSONObject?, headers: Map<String, String>): JSONObject
 }
 
+class IntersticeHTTPError(val status: Int) : IllegalStateException("Interstice request failed ($status). Saved work remains on this device.")
+
 class IntersticeHttp : IntersticeTransport {
     override suspend fun request(connection: IntersticeConnection, method: String, path: String, body: JSONObject?, headers: Map<String, String>): JSONObject = withContext(Dispatchers.IO) {
         require(path.startsWith("/api/v1/") && !path.contains(".."))
@@ -45,7 +47,8 @@ class IntersticeHttp : IntersticeTransport {
                 http.doOutput = true; http.setRequestProperty("Content-Type", "application/json")
                 http.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
             }
-            check(http.responseCode in 200..299) { "Interstice request failed (${http.responseCode}). Saved work remains on this device." }
+            val status = http.responseCode
+            if (status !in 200..299) throw IntersticeHTTPError(status)
             val bytes = http.inputStream.use { stream ->
                 val result = java.io.ByteArrayOutputStream()
                 val buffer = ByteArray(8192)
@@ -136,8 +139,14 @@ class Interstice(private val vault: KeyVault, private val ledgerStore: LedgerSto
     private suspend fun finishCompletion(ledger: JSONObject) {
         val intent = ledger.optJSONObject("completion") ?: return
         check(intent.getString("binding") == binding()) { "Pending completion belongs to a different connection." }
-        request("POST", "/tasks/${FlowSavvy.encode(intent.getString("id"))}/complete", JSONObject(),
-            mapOf("Idempotency-Key" to intent.getString("key"), "If-Match" to intent.getInt("revision").toString()))
+        try {
+            request("POST", "/tasks/${FlowSavvy.encode(intent.getString("id"))}/complete", JSONObject(),
+                mapOf("Idempotency-Key" to intent.getString("key"), "If-Match" to intent.getInt("revision").toString()))
+        } catch (error: IntersticeHTTPError) {
+            if (error.status != 409) throw error
+            ledger.remove("completion"); ledgerStore.write(ledger)
+            throw IllegalStateException("Task changed. Refresh it and confirm completion again.")
+        }
         ledger.remove("completion"); ledgerStore.write(ledger)
     }
     private suspend fun syncLocked() {

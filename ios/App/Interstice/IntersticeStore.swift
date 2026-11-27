@@ -120,8 +120,13 @@ final class IntersticeStore {
     private func finishCompletion() async throws {
         guard let intent = ledger.completion, let connection else { return }
         guard intent.binding == connection.binding else { throw FlowSavvyError(message: "Pending completion belongs to another connection.") }
-        _ = try await client.request("POST", "/api/v1/tasks/\(IntersticeClient.component(intent.taskID))/complete", connection: connection,
-            body: [:], headers: ["Idempotency-Key": intent.key, "If-Match": String(intent.revision)])
+        do {
+            _ = try await client.request("POST", "/api/v1/tasks/\(IntersticeClient.component(intent.taskID))/complete", connection: connection,
+                body: [:], headers: ["Idempotency-Key": intent.key, "If-Match": String(intent.revision)])
+        } catch let error as IntersticeHTTPError where error.status == 409 {
+            ledger.completion = nil; try save()
+            throw FlowSavvyError(message: "Task changed. Refresh it and confirm completion again.")
+        }
         ledger.completion = nil; try save()
     }
     private func load() async throws {

@@ -30,6 +30,7 @@ class IntersticeTest {
         var loseResponse = false
         var mode = "test"
         var offline = false
+        var completionConflict = false
         override suspend fun request(connection: IntersticeConnection, method: String, path: String, body: JSONObject?, headers: Map<String,String>): JSONObject {
             check(!offline) { "Offline" }
             calls += "$method $path"
@@ -38,6 +39,7 @@ class IntersticeTest {
             if (method == "GET") return JSONObject().put("tasks",JSONArray().put(JSONObject().put("id","one").put("title","Task").put("minutes",60).put("progress",progress).put("completed",complete).put("revision",1)))
             val key = headers.getValue("Idempotency-Key")
             if (receipts.containsKey(key)) return receipts.getValue(key)
+            if (path.endsWith("/complete") && completionConflict) throw IntersticeHTTPError(409)
             if (path.endsWith("/progress")) progress = body!!.getLong("minutes")
             if (path.endsWith("/complete")) complete = true
             val result = JSONObject().put("progress",progress).put("completed",complete)
@@ -69,7 +71,7 @@ class IntersticeTest {
             assertNull(f.service.status.value.message)
         }
     }
-    @Test fun sourceHistoryAndOtherCredentialBindingsAreNotReplayed() = runBlocking {
+    @Test fun sourceHistoryAndOtherCredentialBindingsAreNotReplayed(): Unit = runBlocking {
         Fixture().use { f ->
             f.connect()
             val row=f.row("one",60000)
@@ -111,6 +113,17 @@ class IntersticeTest {
             withTimeout(2000) { while(f.remote.progress==0L) delay(10) }
             assertEquals(1L,f.remote.progress)
             assertEquals(1,f.remote.receipts.size)
+        }
+    }
+    @Test fun changedTaskNeedsFreshConfirmationWithoutBlockingFutureSync() = runBlocking {
+        Fixture().use { f ->
+            f.connect();f.remote.completionConflict=true
+            f.service.complete(f.service.status.value.tasks.first()).join()
+            assertFalse(f.remote.complete);assertFalse(f.ledger.value.has("completion"))
+            assertContains(f.service.status.value.message.orEmpty(),"confirm completion again")
+            f.remote.completionConflict=false;f.service.refresh().join()
+            f.service.complete(f.service.status.value.tasks.first()).join()
+            assertTrue(f.remote.complete)
         }
     }
 }
